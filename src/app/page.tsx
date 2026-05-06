@@ -11,7 +11,7 @@ export default async function LandingPage() {
   if (user) redirect("/dashboard");
 
   const settings = await getHouseSettings();
-  const initial = settings.houseName?.charAt(0).toUpperCase() ?? "A";
+  const initial = "A";
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -54,9 +54,7 @@ export default async function LandingPage() {
 
       {/* Footer mark */}
       <footer className="pb-8 text-center">
-        <p className="text-xs tracking-wide text-neutral-600">
-          Est. Ahmar
-        </p>
+        <p className="text-xs tracking-wide text-neutral-600">Est. Ahmar</p>
       </footer>
     </div>
   );
