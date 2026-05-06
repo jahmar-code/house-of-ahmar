@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import { Cormorant_Garamond } from "next/font/google";
+import { Inter, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
-const geistSans = Geist({
+// Inter for everything — matches jawaadahmar.com landing-page typography.
+const inter = Inter({
   variable: "--font-sans",
   subsets: ["latin"],
 });
@@ -15,12 +15,9 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const cormorant = Cormorant_Garamond({
-  variable: "--font-serif",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-});
-
+// `--font-serif` is intentionally aliased to Inter so the legacy
+// `font-heading` utility still resolves to a real font without pulling in a
+// separate serif family.
 export const metadata: Metadata = {
   title: "House of Ahmar",
   description: "The gates are closed. Only blood enters.",
@@ -37,7 +34,8 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${cormorant.variable} antialiased`}
+        className={`${inter.variable} ${inter.className} ${geistMono.variable} antialiased`}
+        style={{ ["--font-serif" as string]: "var(--font-sans)" }}
       >
         <TooltipProvider>
           {children}
@@ -45,9 +43,9 @@ export default function RootLayout({
             theme="dark"
             toastOptions={{
               style: {
-                background: "#1A1A1A",
-                border: "1px solid #2A2A2A",
-                color: "#F5F0E8",
+                background: "#0a0a0a",
+                border: "1px solid #262626",
+                color: "#ededed",
               },
             }}
           />

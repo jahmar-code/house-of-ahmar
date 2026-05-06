@@ -51,43 +51,64 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* HOA Dark Theme — Secret Society aesthetic */
+/*
+ * Theme: matches jawaadahmar.com landing page
+ * Palette: neutral grays + orange accent. Minimal, flat, Inter throughout.
+ * The legacy `--gold` / `--crimson` tokens (and the `text-gold` / `bg-gold` /
+ * `font-heading` utilities) are aliased to this palette so existing
+ * components render without code changes — `font-heading` falls back to the
+ * sans font, gold renders as orange.
+ */
 :root {
-  --background: oklch(0.1 0.005 250);
-  --foreground: oklch(0.93 0.01 80);
-  --card: oklch(0.14 0.005 250);
-  --card-foreground: oklch(0.93 0.01 80);
-  --popover: oklch(0.14 0.005 250);
-  --popover-foreground: oklch(0.93 0.01 80);
-  --primary: oklch(0.78 0.12 85);
-  --primary-foreground: oklch(0.12 0.005 250);
-  --secondary: oklch(0.18 0.005 250);
-  --secondary-foreground: oklch(0.88 0.02 80);
-  --muted: oklch(0.18 0.005 250);
-  --muted-foreground: oklch(0.6 0.02 80);
-  --accent: oklch(0.22 0.01 250);
-  --accent-foreground: oklch(0.93 0.01 80);
-  --destructive: oklch(0.55 0.2 25);
-  --border: oklch(0.25 0.01 250);
-  --input: oklch(0.22 0.01 250);
-  --ring: oklch(0.78 0.12 85);
-  --gold: oklch(0.78 0.12 85);
-  --gold-foreground: oklch(0.12 0.005 250);
-  --crimson: oklch(0.45 0.18 25);
-  --chart-1: oklch(0.78 0.12 85);
-  --chart-2: oklch(0.65 0.1 85);
-  --chart-3: oklch(0.55 0.08 85);
-  --chart-4: oklch(0.45 0.18 25);
-  --chart-5: oklch(0.35 0.1 250);
+  /* Core surfaces — neutral-950 / neutral-900 / ~neutral-200 */
+  --background: oklch(0.145 0 0);          /* #0a0a0a */
+  --foreground: oklch(0.93 0 0);           /* ~#ededed */
+  --card: oklch(0.205 0 0);                /* neutral-900 */
+  --card-foreground: oklch(0.93 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.93 0 0);
+
+  /* Orange accent — orange-400 in dark mode, like the landing page */
+  --primary: oklch(0.75 0.183 55.934);     /* orange-400 */
+  --primary-foreground: oklch(0.145 0 0);  /* dark text on orange */
+
+  /* Neutral 800 fills */
+  --secondary: oklch(0.269 0 0);           /* neutral-800 */
+  --secondary-foreground: oklch(0.93 0 0);
+  --muted: oklch(0.205 0 0);               /* neutral-900 */
+  --muted-foreground: oklch(0.556 0 0);    /* neutral-500 — landing's muted */
+  --accent: oklch(0.269 0 0);              /* neutral-800 */
+  --accent-foreground: oklch(0.93 0 0);
+
+  --destructive: oklch(0.6 0.21 22);       /* red-500-ish */
+  --border: oklch(0.269 0 0);              /* neutral-800 */
+  --input: oklch(0.205 0 0);               /* subtle bg for form fields */
+  --ring: oklch(0.75 0.183 55.934);        /* orange-400 */
+
+  /* Aliases for legacy class names (text-gold, bg-gold, border-gold,
+     text-crimson). Now render as the landing-page orange / red. */
+  --gold: oklch(0.75 0.183 55.934);
+  --gold-foreground: oklch(0.145 0 0);
+  --crimson: oklch(0.6 0.21 22);
+
+  /* Charts — orange-led, with neutrals for variation */
+  --chart-1: oklch(0.75 0.183 55.934);     /* orange-400 */
+  --chart-2: oklch(0.646 0.222 41.116);    /* orange-600 */
+  --chart-3: oklch(0.708 0 0);             /* neutral-400 */
+  --chart-4: oklch(0.6 0.21 22);           /* red-500 */
+  --chart-5: oklch(0.371 0 0);             /* neutral-700 */
+
   --radius: 0.5rem;
-  --sidebar: oklch(0.08 0.005 250);
-  --sidebar-foreground: oklch(0.88 0.02 80);
-  --sidebar-primary: oklch(0.78 0.12 85);
-  --sidebar-primary-foreground: oklch(0.12 0.005 250);
-  --sidebar-accent: oklch(0.16 0.005 250);
-  --sidebar-accent-foreground: oklch(0.88 0.02 80);
-  --sidebar-border: oklch(0.22 0.01 250);
-  --sidebar-ring: oklch(0.78 0.12 85);
+
+  /* Sidebar — same dark surface, orange focus ring */
+  --sidebar: oklch(0.145 0 0);
+  --sidebar-foreground: oklch(0.93 0 0);
+  --sidebar-primary: oklch(0.75 0.183 55.934);
+  --sidebar-primary-foreground: oklch(0.145 0 0);
+  --sidebar-accent: oklch(0.205 0 0);
+  --sidebar-accent-foreground: oklch(0.93 0 0);
+  --sidebar-border: oklch(0.269 0 0);
+  --sidebar-ring: oklch(0.75 0.183 55.934);
 }
 
 @layer base {
@@ -96,13 +117,19 @@
   }
   body {
     @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   html {
     @apply font-sans;
+    scroll-behavior: smooth;
   }
 }
 
-/* Custom utilities for HOA */
+/* Legacy utility shims — keep the old class names working, repointed at the
+ * new palette. `text-gold` / `bg-gold` / `border-gold` now render as orange,
+ * `font-heading` collapses to the sans font, `glow-gold` dims to a subtle
+ * orange ring, `gradient-gold` becomes an orange-700 → orange-400 gradient. */
 @layer utilities {
   .text-gold {
     color: var(--gold);
@@ -117,16 +144,18 @@
     color: var(--crimson);
   }
   .font-heading {
-    font-family: var(--font-serif);
+    font-family: var(--font-sans);
+    font-weight: 700;
+    letter-spacing: -0.015em;
   }
   .glow-gold {
-    box-shadow: 0 0 20px oklch(0.78 0.12 85 / 0.15);
+    box-shadow: 0 0 20px oklch(0.75 0.183 55.934 / 0.12);
   }
   .gradient-gold {
     background: linear-gradient(
       135deg,
-      oklch(0.78 0.12 85) 0%,
-      oklch(0.65 0.1 70) 100%
+      oklch(0.553 0.195 38.402) 0%,
+      oklch(0.75 0.183 55.934) 100%
     );
   }
 }

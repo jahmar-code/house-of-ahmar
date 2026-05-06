@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useMemo, useRef, useEffect } from "react";
 import {
   computeFamilyTreeLayout,
   type RelationshipEdge,
@@ -29,8 +29,42 @@ export function FamilyTree({ members, edges, focusMemberId }: FamilyTreeProps) {
     return m;
   }, [layout]);
 
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // On mount, scroll so the focused member (or the youngest generation)
+  // is visible. In RTL mode, scrollLeft=0 shows the rightmost content
+  // (oldest generation). Scrolling negative reveals content to the left
+  // (younger generations / descendants).
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || edges.length === 0) return;
+
+    if (focusMemberId) {
+      const focusNode = nodeMap.get(focusMemberId);
+      if (focusNode) {
+        // Scroll so the focused card is horizontally centred.
+        // In RTL, the "left" CSS value maps to distance from the content's
+        // right edge, so we convert: RTL scrollLeft = -(x + cardWidth/2 - clientWidth/2)
+        const targetScroll = -(
+          focusNode.x +
+          layout.cardWidth / 2 -
+          el.clientWidth / 2
+        );
+        el.scrollLeft = Math.max(
+          -(el.scrollWidth - el.clientWidth),
+          Math.min(0, targetScroll)
+        );
+        return;
+      }
+    }
+
+    // No focused member — show the full left edge so descendants aren't clipped.
+    el.scrollLeft = -(el.scrollWidth - el.clientWidth);
+  }, [edges.length, focusMemberId, layout, nodeMap]);
+
   return (
     <div
+      ref={containerRef}
       dir="rtl"
       className="rounded-lg border border-border bg-card overflow-auto"
     >

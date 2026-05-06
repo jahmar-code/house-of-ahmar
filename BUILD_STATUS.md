@@ -1,6 +1,6 @@
 # House of Ahmar — Build Status
 
-_Generated: 2026-04-11 | Updated: 2026-04-19_
+_Generated: 2026-04-11 | Updated: 2026-05-06 (Pass 8 — theme refresh)_
 
 This document tracks the full state of the House of Ahmar codebase against the
 design in `~/Desktop/docs/HOA_docs/`. It is the single source of truth for
@@ -20,6 +20,23 @@ design in `~/Desktop/docs/HOA_docs/`. It is the single source of truth for
 - **Pass-5 hardening:** house cover image rendered, env access code persisted
   to `access_codes`, audit log table + viewer, on-demand past-gathering
   archival, Next 16 proxy migration, Vitest installed with first test suite.
+- **Pass-6 Family Tree:** `member_relationships` table (parent→child edges),
+  interactive tree visualization, elder-only relationship editor, remove
+  relationship button. Linked in sidebar + mobile nav.
+- **Pass-7 E2E + bug fixes:** every flow exercised end-to-end with two real
+  accounts (sign-up → initiation with minted code → feed/post/comment/react/
+  pin/announce → gathering create+edit+RSVP+cancel → council channels +
+  threaded replies → archives album+upload+lightbox → members directory +
+  profile → family tree add/remove → elder admin codes/members/settings/
+  audit log/channels). Two bugs found and fixed: RSVP count not refreshing
+  without manual reload, and family tree clipping descendants on first
+  render. **MVP "Definition of Done" smoke test is now ✅.**
+- **Pass-8 theme refresh:** swapped the gold-on-charcoal "secret society"
+  theme for the minimal neutral-gray + orange-400 palette and Inter
+  typography of `jawaadahmar.com`. Achieved by re-aliasing the CSS
+  variables (`--gold`, `--primary`, `--font-serif`, etc.) so the existing
+  `text-gold` / `bg-gold` / `font-heading` utilities resolve to the new
+  palette without component edits.
 - **Blocker to running locally:** none. Storage buckets ✅, Realtime on
   `messages` + `channels` ✅ (via `node scripts/enable-realtime.mjs`).
   Email-confirm toggle is optional dev convenience.
@@ -39,7 +56,7 @@ design in `~/Desktop/docs/HOA_docs/`. It is the single source of truth for
 | Storage     | Supabase Storage (Phase 4)            | OK — upload helper + UI wired |
 | Realtime    | Supabase Realtime (Phase 3)           | OK — Council messages stream live |
 | Validation  | Zod 4                                 | OK     |
-| Forms       | React Hook Form                       | installed (not used yet) |
+| Forms       | React Hook Form                       | installed |
 | Toasts      | Sonner                                | OK     |
 | Tests       | Vitest 4                              | OK — 29 passing (validators) |
 
@@ -80,11 +97,13 @@ app/
 │   ├── archives/
 │   │   ├── page.tsx                  ✓ album grid + CreateAlbumDialog (new)
 │   │   └── [albumId]/page.tsx        ✓ photo grid + UploadPhotoDialog (new)
+│   ├── family/
+│   │   └── page.tsx                  ✓ family tree visualization + relationship editor
 │   ├── members/
 │   │   ├── page.tsx                  ✓ directory w/ online indicators
 │   │   └── [id]/page.tsx             ✓ member profile
 │   └── elder-council/
-│       ├── page.tsx                  ✓ admin home (3 → 4 cards now)
+│       ├── page.tsx                  ✓ admin home (5 cards: members, codes, channels, settings, audit)
 │       ├── members/page.tsx          ✓ management
 │       ├── members/member-management.tsx ✓ client dropdown (roles, deactivate)
 │       ├── access-codes/page.tsx     ✓ list + RevokeButton (new)
@@ -92,7 +111,8 @@ app/
 │       ├── access-codes/revoke-button.tsx    ✓ (new)
 │       ├── channels/page.tsx                 ✓ (new — channel management)
 │       ├── channels/create-channel-form.tsx  ✓ (new)
-│       └── settings/page.tsx                 ◯ STUB ("coming soon")
+│       ├── settings/page.tsx                 ✓ house name/tagline/welcome/cover image
+│       └── settings/settings-form.tsx       ✓ client form with toast feedback
 │
 ├── actions/
 │   ├── onboarding.ts                 ✓ validateAccessCode, completeInitiation
@@ -102,6 +122,8 @@ app/
 │   ├── members.ts                    ✓ updateProfile, updateMemberRole, deactivateMember
 │   ├── admin.ts                      ✓ createAccessCode, revokeAccessCode (new)
 │   ├── archives.ts                   ✓ createAlbum, uploadPhoto, deleteAlbum (new)
+│   ├── family.ts                     ✓ addRelationship, removeRelationship
+│   ├── settings.ts                   ✓ updateHouseSettings (elder-only)
 │   └── presence.ts                   ✓ heartbeat
 │
 └── api/                              (Clerk webhook deleted — CASCADE handles it)
@@ -137,9 +159,13 @@ components/
 │   └── message-input.tsx             ✓
 ├── members/
 │   └── member-grid.tsx               ✓
-└── archives/
-    ├── create-album-dialog.tsx       ✓
-    └── upload-photo-dialog.tsx       ✓ file upload + URL mode
+├── archives/
+│   ├── create-album-dialog.tsx       ✓
+│   └── upload-photo-dialog.tsx       ✓ file upload + URL mode
+└── family/
+    ├── family-tree.tsx               ✓ interactive tree layout (eldest right, descendants left)
+    ├── relationship-editor.tsx       ✓ elder-only dialog to add parent→child edges
+    └── remove-relationship-button.tsx ✓ delete edge with confirmation
 ```
 
 ### `src/lib/`
@@ -147,6 +173,7 @@ components/
 lib/
 ├── auth.ts            ✓ getAuthContext() cached, requireAuth, requireRole
 ├── constants.ts       ✓ roles, role hierarchy, emoji set, presence timings
+├── family-tree.ts     ✓ tree layout algorithm (generational ordering)
 ├── validators.ts      ✓ Zod schemas for all user input
 ├── utils.ts           ✓ cn()
 ├── db/
@@ -164,8 +191,9 @@ Inferred select/insert types for every table + `ActionResult<T>` discriminated
 union.
 
 ### `supabase/migrations/0001_initial_schema.sql`
-Full DDL for 14 tables + enums + indexes + seed channels + RLS on
+Full DDL for 15 tables + enums + indexes + seed channels + RLS on
 `messages` / `channels` (the only tables Supabase Realtime will touch).
+Includes `member_relationships` (parent→child edges for the family tree).
 
 ---
 
@@ -266,6 +294,95 @@ After all changes: `npx tsc --noEmit` → **Exit 0**.
 | `scripts/confirm-test-user.mjs`, `scripts/seed-channels.mjs`, `scripts/seed-test-member.mjs`, `scripts/seed-album.mjs`, `scripts/seed-past-gathering.mjs`, `scripts/check-messages.mjs` _(new)_ | Repeatable test fixtures used during the live E2E. |
 
 After all changes: `npx tsc --noEmit` → **Exit 0**, `npm run lint` → **0 errors**, `npm run build` → **Exit 0** (22 routes, no proxy/middleware deprecation warning), `npx vitest run` → **29 / 29 passing**.
+
+### Pass 6 (2026-04-19): Family Tree
+
+| File | Change |
+|------|--------|
+| `src/lib/db/schema.ts` | Added `memberRelationships` table (parent→child edges with unique constraint + cascade deletes). |
+| `src/lib/family-tree.ts` _(new)_ | Tree layout algorithm — assigns generational layers, positions nodes for rendering. |
+| `src/app/actions/family.ts` _(new)_ | `addRelationship` (elder-only, validates no duplicate/self-link), `removeRelationship` (elder-only). |
+| `src/app/(house)/family/page.tsx` _(new)_ | Server page fetches all members + edges, renders `FamilyTree` + elder-only `RelationshipEditor`. |
+| `src/components/family/family-tree.tsx` _(new)_ | Interactive tree visualization — eldest on the right, descendants spread left. Highlights current user. |
+| `src/components/family/relationship-editor.tsx` _(new)_ | Dialog for elders to add parent→child relationships between members. |
+| `src/components/family/remove-relationship-button.tsx` _(new)_ | Confirmation-gated edge removal. |
+| `src/components/layout/house-sidebar.tsx` | Added "Family" nav link. |
+| `src/components/layout/mobile-nav.tsx` | Added "Family" tab. |
+
+After all changes: `npx tsc --noEmit` → **Exit 0**, `npx vitest run` → **29 / 29 passing**.
+
+### Pass 7 (2026-05-06): full E2E test + two bug fixes
+
+Exercised every P0 user flow against the running app with two real accounts
+(`e2e-elder@hotseat.dev` as the founding Elder and `e2e-new-member@hotseat.dev`
+brought in via a minted access code). All 11 flows passed; two bugs surfaced
+during testing and were fixed in the same pass.
+
+| File | Change |
+|------|--------|
+| `src/components/gatherings/rsvp-button.tsx` | **Bug fix:** added `useRouter` + `router.refresh()` after a successful `updateRsvp` server-action response so the attendee count + RSVP-list re-render without a manual reload. Root cause: `revalidatePath` only auto-refreshes the router for `<form action=…>` calls, not server actions invoked from `onClick`. |
+| `src/components/family/family-tree.tsx` | **Bug fix:** added `useRef` + `useEffect` to scroll the RTL tree container on mount. If `focusMemberId` resolves to a node, the card is centred horizontally; otherwise the container scrolls to the leftmost extent so descendants aren't clipped behind the right edge (where `dir="rtl"` parks `scrollLeft = 0`). |
+
+**E2E flows verified (11 / 11 ✅):**
+
+1. Sign-up & onboarding
+2. Initiation (access code → profile → complete)
+3. Dashboard & presence (online indicator, birthdays widget)
+4. Feed (post, comment, react, pin, announce, image attach)
+5. Gatherings (create, edit, RSVP, cancel)
+6. Council (channels, messages, threaded replies, realtime)
+7. Archives (album create, photo upload, lightbox keyboard nav)
+8. Members directory & profile pages
+9. Family tree (add/remove relationships, focus highlighting, multi-gen scroll)
+10. Elder Council admin (codes mint+revoke, member roles + deactivate +
+    reactivate, settings, audit log, channel management)
+11. Second-user initiation with a minted code (full new-member flow)
+
+**Test data cleaned up after the pass:**
+
+- `e2e-new-member@hotseat.dev` deactivated (still exists in `auth.users` and
+  `members` for re-test purposes; `is_active=false` so they're hidden from
+  the directory).
+- E2E Test Chamber channel deleted.
+- E2E RSVP Test Gathering deleted.
+- Test relationship (E2E Elder → New E2E Member) removed.
+
+**Auxiliary discovery (spawned as a background task):** the
+`/elder-council/channels` admin page renders an `is_archived` badge but
+exposes no UI to set it. A follow-up session has been queued to add an
+archive/delete control. Tracked in §5 P1.
+
+### Pass 8 (2026-05-06): theme refresh — match jawaadahmar.com landing page
+
+Replaced the original "secret society" gold-on-charcoal theme with the
+minimal neutral-gray + orange aesthetic of the personal landing page at
+`jawaadahmar.com` (source: `~/Desktop/dev/landing-pagev2`).
+
+**Approach:** re-aliased the existing CSS variables in `globals.css` rather
+than rewriting components. Every legacy `text-gold` / `bg-gold` /
+`border-gold` / `font-heading` utility (43 component files, ~220 usages)
+now resolves to the new palette automatically — zero component churn.
+
+| File | Change |
+|------|--------|
+| `src/app/globals.css` | Repointed every `--*` token to the landing-page palette: background `#0a0a0a` (neutral-950), foreground `~#ededed`, card / muted neutral-900, borders neutral-800, primary + ring + `--gold` alias all map to `oklch(0.75 0.183 55.934)` (Tailwind orange-400), `--crimson` to red-500. `--font-serif` aliased to `var(--font-sans)` so `font-heading` collapses to Inter without a separate font load. `glow-gold` softened to a faint orange ring; `gradient-gold` becomes orange-700 → orange-400. |
+| `src/app/layout.tsx` | Removed Cormorant Garamond serif. Body font is now Inter (matches the landing page). Toaster swatches updated to `#0a0a0a / #262626 / #ededed`. Inline style sets `--font-serif: var(--font-sans)` so `font-heading` always renders even without an explicit serif family. |
+
+After all changes: `npx tsc --noEmit` → **Exit 0**. Manual visual pass on
+dashboard, feed, family tree, and council confirmed the orange accent reads
+correctly on every previously-gold surface (badges, focus rings, primary
+buttons, mobile nav active state, avatar initials, "elder" badge).
+
+**Future polish (not blocking):**
+- The current implementation is dark-only (`<html className="dark">` is
+  hardcoded in the root layout). The landing page also supports light
+  mode via `prefers-color-scheme`. If light-mode parity is desired,
+  remove the hardcoded `dark` class and add a `:root:not(.dark)` block
+  with the white-background palette in `globals.css`.
+- A handful of components reference colour names directly (`text-emerald-400`
+  for the online indicator, `bg-amber-500/20` in RSVP buttons). These read
+  fine against the new neutrals but a sweep could unify them under the
+  new accent palette if desired.
 
 ---
 
@@ -404,16 +521,56 @@ attach). `PostCard` renders media grids.
   the deprecation warning, and the route table shows
   `ƒ Proxy (Middleware)`.
 
+### P1 — Channel archive/delete UI _(new — surfaced in Pass 7 E2E)_
+The `/elder-council/channels` admin page renders an `is_archived` badge
+(`channels.is_archived` exists in the schema) but never lets an elder
+toggle it. Add an archive control + a "show archived" filter, plus a
+hard-delete path with a confirmation dialog (or soft-archive + a separate
+purge action). A background session has been spawned for this — pick it
+up there or implement inline. Touches:
+- `src/app/(house)/elder-council/channels/page.tsx`
+- `src/app/actions/council.ts` (`archiveChannel`, `unarchiveChannel`,
+  `deleteChannel` — elder-only, audit-logged)
+- `src/lib/validators.ts` (channel-id schema)
+
 ### P1 — Tests + CI
 - ~~Vitest setup~~ ✅ Done in pass 5 (`vitest.config.mts`,
   `src/lib/validators.test.ts`, 29 tests passing).
+- ~~At least one full E2E smoke test~~ ✅ Done manually in pass 7. Next:
+  codify the flow as a Playwright (or Vitest browser-mode) script so it
+  runs in CI instead of by hand.
 - Server-action / settings-reader / audit-helper tests (require module mocks
   for Drizzle + Supabase).
-- GitHub Actions CI: `npm ci` → `tsc --noEmit` → `eslint` → `vitest run`.
+- GitHub Actions CI: `npm ci` → `tsc --noEmit` → `eslint` → `vitest run`
+  → (eventually) `playwright test`.
+
+### P2 — Future polish surfaced in Pass 7
+- **`router.refresh()` audit.** The RSVP fix exposed a class of bug:
+  any server action invoked from `onClick` (not from a `<form action>`)
+  needs an explicit `router.refresh()` to update server-component data.
+  Worth a quick sweep over every other client component that calls a
+  server action via event handler — feed reactions, post pin, member
+  role updates, channel create, etc. — to confirm none are silently
+  serving stale data.
+- **Family-tree focus by member id.** The current `focusMemberId={ctx?.memberId}`
+  works when the auth context exposes the member-table id, but if the
+  lookup ever returns the auth user id instead, `nodeMap.get(focusMemberId)`
+  returns undefined and the effect falls back to "show full left edge".
+  That fallback is acceptable, but worth confirming `getAuthContext()`
+  always returns the member id.
+- **Sign-out UX.** No dedicated `/sign-out` route exists; sign-out is
+  triggered via `supabase.auth.signOut()` inside the sidebar component.
+  Considered cosmetic but it makes manual session swaps awkward during
+  testing. Adding a lightweight `/sign-out` route (clear cookie +
+  redirect) would help.
 
 ### P3 — Longer-term ideas (from `04-Roadmap.md`)
-Family tree, polls, recipes, map view, voice/video, document vault,
+~~Family tree~~, polls, recipes, map view, voice/video, document vault,
 localization (Dari/Pashto), mobile PWA.
+
+> **Family Tree** — ✅ shipped in pass 6. `member_relationships` table with
+> parent→child edges, interactive tree visualization, elder-only relationship
+> editor. Linked in sidebar + mobile nav.
 
 ---
 
@@ -497,9 +654,11 @@ The project ships when:
 - [x] Council realtime is wired and messages stream live
 - [x] Photo/media uploads go through Supabase Storage (code done — buckets
       need to be created in dashboard)
-- [ ] At least one end-to-end smoke test: sign up → initiate → post → RSVP →
+- [x] At least one end-to-end smoke test: sign up → initiate → post → RSVP →
       chat → upload → elder mints code → new user initiates using it
+      _(Pass 7 — all 11 flows exercised with two real accounts.)_
 - [x] House Settings page does something real (house name, tagline,
       welcome message, cover image URL)
 
-Everything else in §5 P2/P3 is post-MVP polish.
+**MVP Definition of Done achieved (2026-05-06).** Everything else in §5
+P1/P2/P3 is post-MVP work.

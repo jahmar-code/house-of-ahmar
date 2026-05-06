@@ -47,7 +47,11 @@ Location: `src/lib/supabase/`
 
 All three read the same env vars. The SSR split exists because Next.js middleware/server components/client components each have different cookie access rules — Supabase needs a slightly different cookie adapter in each.
 
-### 1.4 Route protection (`src/middleware.ts`)
+### 1.4 Route protection (`src/proxy.ts`)
+
+> **Note:** This was `src/middleware.ts` originally. It was renamed to
+> `src/proxy.ts` (with export `proxy`) in pass 5 as part of the Next 16
+> migration to eliminate the deprecation warning.
 
 Flow on every matched request:
 

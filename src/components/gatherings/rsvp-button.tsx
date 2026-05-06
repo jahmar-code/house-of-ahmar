@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { updateRsvp } from "@/app/actions/gatherings";
 import { toast } from "sonner";
@@ -34,12 +35,14 @@ const statuses = [
 
 export function RsvpButton({ gatheringId, currentStatus }: RsvpButtonProps) {
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   async function handleRsvp(status: "attending" | "maybe" | "not_attending") {
     setLoading(true);
     const result = await updateRsvp(gatheringId, status);
     if (result.success) {
       toast.success("Response updated");
+      router.refresh();
     } else {
       toast.error(result.error);
     }
