@@ -14,19 +14,8 @@ export default async function LandingPage() {
   const initial = settings.houseName?.charAt(0).toUpperCase() ?? "A";
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-background">
-      {/* Optional cover image — kept very subtle behind the content. */}
-      {settings.coverImageUrl && (
-        <>
-          <div
-            className="pointer-events-none absolute inset-0 bg-cover bg-center opacity-20"
-            style={{ backgroundImage: `url(${settings.coverImageUrl})` }}
-          />
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-background/70 via-background/90 to-background" />
-        </>
-      )}
-
-      <main className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center gap-8 px-6 py-16 text-center">
+    <div className="flex min-h-screen flex-col bg-background">
+      <main className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center gap-8 px-6 py-16 text-center">
         {/* Monogram */}
         <div className="flex h-16 w-16 items-center justify-center rounded-full border border-neutral-800">
           <span className="text-2xl font-semibold tracking-tight text-foreground">
@@ -64,7 +53,7 @@ export default async function LandingPage() {
       </main>
 
       {/* Footer mark */}
-      <footer className="relative z-10 pb-8 text-center">
+      <footer className="pb-8 text-center">
         <p className="text-xs tracking-wide text-neutral-600">
           Est. Ahmar
         </p>
