@@ -3,46 +3,32 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import {
-  LayoutDashboard,
-  Scroll,
-  Calendar,
-  MessageSquare,
-  Users,
-  TreePine,
-} from "lucide-react";
+import { NAV_ITEMS, isNavActive } from "./nav-items";
 
-const mobileNav = [
-  { name: "Hall", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Wall", href: "/feed", icon: Scroll },
-  { name: "Gather", href: "/gatherings", icon: Calendar },
-  { name: "Council", href: "/council", icon: MessageSquare },
-  { name: "Family", href: "/family", icon: TreePine },
-  { name: "Members", href: "/members", icon: Users },
-];
+const bottomNav = NAV_ITEMS.filter((item) => item.inBottomNav);
 
 export function MobileNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/95 backdrop-blur-sm lg:hidden">
-      <div className="flex items-center justify-around py-2">
-        {mobileNav.map((item) => {
-          const isActive =
-            pathname === item.href || pathname.startsWith(item.href + "/");
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-sm supports-backdrop-filter:bg-background/80 lg:hidden">
+      <div className="flex items-stretch justify-around">
+        {bottomNav.map((item) => {
+          const isActive = isNavActive(pathname, item.href);
           return (
             <Link
               key={item.href}
               href={item.href}
+              aria-current={isActive ? "page" : undefined}
               className={cn(
-                "flex flex-col items-center gap-1 px-3 py-1.5 text-xs transition-colors",
+                "flex min-h-12 flex-1 flex-col items-center justify-center gap-1 py-2 text-[11px] font-medium transition-colors",
                 isActive
                   ? "text-gold"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
               <item.icon className="h-5 w-5" />
-              <span>{item.name}</span>
+              <span>{item.shortName}</span>
             </Link>
           );
         })}

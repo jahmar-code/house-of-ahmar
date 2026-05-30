@@ -1,7 +1,6 @@
 import { db } from "@/lib/db";
 import { channels } from "@/lib/db/schema";
 import { eq, asc } from "drizzle-orm";
-import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ChannelList } from "@/components/council/channel-list";

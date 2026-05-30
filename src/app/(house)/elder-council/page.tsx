@@ -1,11 +1,11 @@
 import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { members, accessCodes } from "@/lib/db/schema";
+import { accessCodes } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatsCard } from "@/components/dashboard/stats-card";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import { Users, Key, Settings, Shield, MessageSquare, ScrollText } from "lucide-react";
 

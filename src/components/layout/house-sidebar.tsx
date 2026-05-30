@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,55 +11,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import {
-  LayoutDashboard,
-  Scroll,
-  Calendar,
-  MessageSquare,
-  Image,
-  Users,
-  Shield,
-  LogOut,
-  TreePine,
-} from "lucide-react";
-
-const navigation = [
-  {
-    name: "The Great Hall",
-    href: "/dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    name: "The Wall",
-    href: "/feed",
-    icon: Scroll,
-  },
-  {
-    name: "Gatherings",
-    href: "/gatherings",
-    icon: Calendar,
-  },
-  {
-    name: "The Council",
-    href: "/council",
-    icon: MessageSquare,
-  },
-  {
-    name: "The Archives",
-    href: "/archives",
-    icon: Image,
-  },
-  {
-    name: "Members",
-    href: "/members",
-    icon: Users,
-  },
-  {
-    name: "Family Tree",
-    href: "/family",
-    icon: TreePine,
-  },
-];
+import { Shield, LogOut } from "lucide-react";
+import { NAV_ITEMS, isNavActive } from "./nav-items";
 
 interface HouseSidebarProps {
   role: string;
@@ -102,9 +54,8 @@ export function HouseSidebar({ role, displayName, avatarUrl, houseName }: HouseS
 
         {/* Navigation */}
         <nav className="flex flex-1 flex-col gap-1">
-          {navigation.map((item) => {
-            const isActive =
-              pathname === item.href || pathname.startsWith(item.href + "/");
+          {NAV_ITEMS.map((item) => {
+            const isActive = isNavActive(pathname, item.href);
             return (
               <Link
                 key={item.href}

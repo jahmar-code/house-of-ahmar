@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
-import { members, posts, gatherings, channels, messages } from "@/lib/db/schema";
-import { eq, gte, desc, and, sql } from "drizzle-orm";
+import { members, posts, gatherings, channels } from "@/lib/db/schema";
+import { eq, gte, desc, and } from "drizzle-orm";
 import { PRESENCE_TIMEOUT_MS } from "@/lib/constants";
 import { getHouseSettings } from "@/lib/settings";
 import { PageHeader } from "@/components/shared/page-header";

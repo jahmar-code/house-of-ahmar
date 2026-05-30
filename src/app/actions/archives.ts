@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { albums, photos } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { requireAuth, requireRole } from "@/lib/auth";
+import { requireAuth } from "@/lib/auth";
 import { z } from "zod";
 import type { ActionResult } from "@/types";
 

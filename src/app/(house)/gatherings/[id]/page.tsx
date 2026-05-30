@@ -6,7 +6,6 @@ import { getAuthContext } from "@/lib/auth";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { Calendar, MapPin, User } from "lucide-react";
 import { RsvpButton } from "@/components/gatherings/rsvp-button";
