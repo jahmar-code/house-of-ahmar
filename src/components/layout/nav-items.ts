@@ -3,9 +3,7 @@ import {
   Scroll,
   Calendar,
   MessageSquare,
-  Image,
   Users,
-  TreePine,
   type LucideIcon,
 } from "lucide-react";
 
@@ -55,25 +53,11 @@ export const NAV_ITEMS: NavItem[] = [
     inBottomNav: true,
   },
   {
-    name: "The Archives",
-    shortName: "Archives",
-    href: "/archives",
-    icon: Image,
-    inBottomNav: false,
-  },
-  {
     name: "Members",
     shortName: "Members",
     href: "/members",
     icon: Users,
     inBottomNav: true,
-  },
-  {
-    name: "Family Tree",
-    shortName: "Family",
-    href: "/family",
-    icon: TreePine,
-    inBottomNav: false,
   },
 ];
 

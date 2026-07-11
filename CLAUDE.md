@@ -1,8 +1,8 @@
 # House of Ahmar
 
 A private, invite-only community platform for one family "House" — a members-only
-social space with a feed, events, a real-time council chat, a photo archive, and a
-family tree. Entry is by **initiation**: you need an access code minted by an
+social space with a feed, events, and a real-time council chat. Entry is by
+**initiation**: you need an access code minted by an
 Elder. There is no public content and no self-serve signup into the House itself —
 the landing page is a gate.
 
@@ -52,10 +52,10 @@ validators) and `npx tsc --noEmit` before any commit.
 
 **As the end user** —
 - *Elder*: "I run the House. I mint invite codes, manage members and their roles,
-  create council chambers, curate the family tree, and set the House's identity.
+  create council chambers, and set the House's identity.
   Nothing sensitive should be one misclick away."
 - *Member*: "I want to see who's around, post to the wall, RSVP to gatherings,
-  chat in the council, and browse the archives — on my phone, instantly."
+  and chat in the council — on my phone, instantly."
 - *Guest*: "I have limited standing (`guest` role, rank 0). I can be in the House
   but I'm below a full member."
 
@@ -73,9 +73,9 @@ one (a new feature typically = database + backend + frontend + qa).
 
 | Load this persona | File | When the task is about… |
 |---|---|---|
-| **Database Engineer** | [`agents/database-engineer.md`](agents/database-engineer.md) | `schema.ts`, migrations, enums, indexes/constraints, family-tree edges, soft-delete leaks, RLS |
+| **Database Engineer** | [`agents/database-engineer.md`](agents/database-engineer.md) | `schema.ts`, migrations, enums, indexes/constraints, soft-delete leaks, RLS |
 | **Backend Engineer** | [`agents/backend-engineer.md`](agents/backend-engineer.md) | Server actions, the `src/lib/` domain layer, auth/role gating, presence, audit, settings, DDD |
-| **Frontend Engineer** | [`agents/frontend-engineer.md`](agents/frontend-engineer.md) | Any visible UI, styling, the design tokens, RSC-vs-client boundaries, realtime chat / lightbox / family-tree UI |
+| **Frontend Engineer** | [`agents/frontend-engineer.md`](agents/frontend-engineer.md) | Any visible UI, styling, the design tokens, RSC-vs-client boundaries, realtime chat |
 | **QA Tester** | [`agents/qa-tester.md`](agents/qa-tester.md) | Verifying a flow, reproducing a bug, extending Vitest coverage, stale-UI / authz checks |
 | **Security & Pen Tester** | [`agents/security-pentester.md`](agents/security-pentester.md) | Auth, access codes, initiation, role gating, the open-redirect guard, tokens, hardening |
 
@@ -156,8 +156,6 @@ src/
       members/  members/[id]/ Directory + member profile
       gatherings/             list · new · [id] · [id]/edit  (events + RSVP)
       council/  council/[channelId]/   Realtime chat (channels = "chambers")
-      archives/  archives/[albumId]/   Photo albums + lightbox
-      family/                 Family tree (member_relationships)
       elder-council/          ADMIN — each page self-guards: requireRole("elder") or redirect /dashboard
         page · access-codes · channels · members · audit-log · settings
     actions/                  ALL mutations (one file per domain — the mutation surface; no REST API)
@@ -166,7 +164,7 @@ src/
     ui/                       shadcn/Base-UI primitives — DO NOT edit directly. Reuse before building.
     layout/                   house-sidebar · mobile-header · mobile-nav · presence-provider · nav-items.ts
     shared/                   page-header · empty-state
-    dashboard/ feed/ gatherings/ council/ members/ archives/ family/   feature components
+    dashboard/ feed/ gatherings/ council/ members/   feature components
   hooks/                      EMPTY — no custom hooks yet (see Critical rule #10)
   lib/
     db/schema.ts              Drizzle schema — SINGLE SOURCE OF TRUTH for the data model (14 tables)
@@ -177,7 +175,6 @@ src/
     validators.ts             Zod schemas — SINGLE SOURCE OF TRUTH for input validation
     settings.ts               getHouseSettings() + HOUSE_SETTING_DEFAULTS
     audit.ts                  logAudit() (best-effort) + AuditAction union
-    family-tree.ts            computeFamilyTreeLayout() — pure generational layout
     get-url.ts                getURL() — origin resolver for auth email links
     utils.ts                  cn()
   types/index.ts              Inferred Drizzle types + ActionResult<T>
@@ -214,6 +211,11 @@ members ───────────────────── central 
 house_settings — standalone KV store (key UNIQUE → jsonb value). NOT a per-row entity.
 ```
 
+> **Removed features — tables retained.** The **Family Tree** (`member_relationships`)
+> and **The Archives** (`albums` + `photos`) were removed from the app surface *for
+> now*; their tables and data are kept (currently unused) so both features can be
+> restored from git history.
+
 **Enums:** `member_role` (elder, member, guest) · `post_type` (text, photo,
 announcement) · `rsvp_status` (attending, maybe, not_attending) · `channel_type`
 (general, announcement, private) · `code_status` (active, used, revoked).
@@ -227,7 +229,7 @@ announcement) · `rsvp_status` (attending, maybe, not_attending) · `channel_typ
 | Cancel + archive | `isCancelled`, `archivedAt` | `gatherings` (distinct states) |
 | Archive | `isArchived` | `channels` |
 | Status | `status='revoked'` | `access_codes` |
-| **Hard delete** (+ cascade) | — | `reactions`, `rsvps`, `member_relationships`, `albums` (`deleteAlbum` → cascades `photos`) |
+| **Hard delete** (+ cascade) | — | `reactions`, `rsvps`, `member_relationships`, `albums` (album delete cascades `photos`) |
 
 Member-as-author FKs (`posts.authorId`, etc.) have **no `onDelete`** → Postgres
 default `NO ACTION`/RESTRICT. That's intentional: **members are deactivated
@@ -251,8 +253,6 @@ real thing.
 | **Initiation** | Onboarding via access code (`/initiation` → `profile` → `complete`). |
 | **Access code** | `access_codes` — an invite an Elder mints; has `maxUses`, `useCount`, `expiresAt`. |
 | **Gathering** | An event (`gatherings`); members **RSVP** (`rsvps`). |
-| **The Archives** | Photo albums (`albums` + `photos`) with a lightbox. |
-| **Family Tree** | `member_relationships` — directed parent→child edges. |
 | **Elder / Member / Guest** | The three roles (`member_role`, ranks 2/1/0). First-ever initiate becomes **Elder**. |
 
 Nav labels live in `src/components/layout/nav-items.ts` (`NAV_ITEMS`, the single
@@ -341,7 +341,7 @@ export async function doThing(formData: FormData): Promise<ActionResult<T>> {
   Inactive members resolve to `null` (deactivation = lockout).
 - **Owner-or-elder** is the recurring edit/delete gate:
   `if (row.ownerCol !== ctx.memberId && ctx.role !== "elder") return { success:false, error:"Not authorized" }`
-  (used in `deletePost`, `deleteMessage`, `deleteAlbum`, `updateGathering`,
+  (used in `deletePost`, `deleteMessage`, `updateGathering`,
   `cancelGathering`).
 
 ### Zod is the single source of truth for input
@@ -382,8 +382,9 @@ directory do) or it leaks deactivated members.
   `lastSeenAt >= now - PRESENCE_TIMEOUT_MS` (5 min). A closed tab drops silently
   after 5 min.
 - **Storage.** `src/lib/supabase/storage.ts` — `uploadFile(bucket, path, file)`
-  (browser-side, RLS applies) + `storagePath(memberId, fileName)`. Wired buckets:
-  **`feed-media`** (post images) and **`archives`** (album photos). Buckets must be
+  (browser-side, RLS applies) + `storagePath(memberId, fileName)`. Wired bucket:
+  **`feed-media`** (post images). The **`archives`** bucket is retained but unused
+  after the Archives feature was removed. Buckets must be
   created manually in the Supabase dashboard.
 
 ---
@@ -473,7 +474,7 @@ mints `bg-background`, `text-primary`, `text-gold`, etc.
 | Access codes | stored/compared **uppercase** (`.trim().toUpperCase()`) | `AHMAR2024` |
 
 **Ubiquitous language:** use the § Domain vocabulary names in UI copy (Great Hall,
-Council, Chambers, Initiation, Gathering, Archives). In code, use the real
+Council, Chambers, Initiation, Gathering). In code, use the real
 identifiers (`dashboard`, `channels`, `gatherings`). Roles are `elder`/`member`/
 `guest` everywhere.
 
@@ -481,8 +482,8 @@ identifiers (`dashboard`, `channels`, `gatherings`). Roles are `elder`/`member`/
 
 ## Engineering principles & anti-patterns
 
-- **Keep logic out of components.** Business rules (role checks, the family-tree
-  layout, settings defaults, the audit lifecycle) live in `src/app/actions/` and
+- **Keep logic out of components.** Business rules (role checks, settings defaults,
+  the audit lifecycle) live in `src/app/actions/` and
   `src/lib/`, unit-tested where pure. A component renders state and dispatches
   actions.
 - **One source of truth per concept.** Roles live in `constants.ts`; input shapes
@@ -495,19 +496,15 @@ identifiers (`dashboard`, `channels`, `gatherings`). Roles are `elder`/`member`/
   the *right* pattern, and fix these when you touch them: `feed.addComment` reads
   `postId` from `FormData` with only a presence check; `feed.toggleReaction`
   accepts an arbitrary `emoji` string (not checked against `REACTION_EMOJIS`);
-  `archives.ts` defines its own inline `albumSchema`/`photoSchema` instead of
-  `validators.ts`; `createAccessCodeSchema.expiresInDays` is validated but never
+  `createAccessCodeSchema.expiresInDays` is validated but never
   applied (`createAccessCode` never sets `expiresAt`).
 - **Audit every elder mutation.** `logAudit()` (best-effort, never throws) is
   wired into role/deactivate/reactivate, code create/revoke, channel create,
-  settings update, gathering cancel/archive, relationship add/remove. New
+  settings update, gathering cancel/archive. New
   elder-only mutations should log too.
 - **Mobile-first.** Verify UI at ~375px. The `(house)` shell has three separate
   chrome components (sidebar / mobile header / bottom nav) driven by one
   `NAV_ITEMS` — keep them consistent.
-- **Family-tree cycles are checked twice.** `family.addRelationship` rejects a
-  cycle (`wouldCreateCycle`) at write time; `computeFamilyTreeLayout` has a
-  depth-time guard. Keep both consistent when editing relationship rules.
 
 ---
 
@@ -518,8 +515,8 @@ identifiers (`dashboard`, `channels`, `gatherings`). Roles are `elder`/`member`/
   the Zod schemas (pass + reject paths).
 - **Gaps worth closing when you touch the area** (not yet covered): server actions
   (mock the Drizzle chain + `getAuthContext`, assert success *and* the auth/owner
-  branches), `relationshipSchema` (its self-parent `.refine` is untested), the
-  presence/settings readers, and any real E2E (there is no Playwright / CI yet).
+  branches), the presence/settings readers, and any real E2E (there is no
+  Playwright / CI yet).
 - **Gate before commit:** `npx tsc --noEmit` (fast, offline) + `npm test`. Run the
   tests you write — green locally, not "should pass".
 

@@ -73,16 +73,6 @@ export const createAccessCodeSchema = z.object({
   expiresInDays: z.number().int().min(1).max(365).optional(),
 });
 
-export const relationshipSchema = z
-  .object({
-    parentId: z.string().uuid("Invalid parent id"),
-    childId: z.string().uuid("Invalid child id"),
-  })
-  .refine((d) => d.parentId !== d.childId, {
-    message: "A member cannot be their own parent",
-    path: ["parentId"],
-  });
-
 export const houseSettingsSchema = z.object({
   houseName: z
     .string()
