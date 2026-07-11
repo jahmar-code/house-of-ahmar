@@ -30,6 +30,7 @@ export default async function ChannelPage({
     where: eq(channels.id, channelId),
   });
   if (!channel) notFound();
+  if (channel.isArchived) notFound();
   // Private chambers are elder-only — hide from everyone else.
   if (channel.type === "private" && ctx?.role !== "elder") notFound();
 
@@ -49,7 +50,7 @@ export default async function ChannelPage({
   const Icon = typeIcons[channel.type];
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] flex-col lg:h-[calc(100vh-6rem)]">
+    <div className="flex h-[calc(100dvh-8rem)] flex-col lg:h-[calc(100dvh-6rem)]">
       {/* Channel header */}
       <div className="flex items-center gap-3 border-b border-border pb-4">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border bg-muted">

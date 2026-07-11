@@ -13,7 +13,7 @@ export async function sendMessage(
   channelId: string,
   formData: FormData
 ): Promise<ActionResult> {
-  const ctx = await requireAuth();
+  const ctx = await requireRole("member"); // guests are read-only
 
   const parsed = messageSchema.safeParse({
     content: formData.get("content"),
@@ -29,6 +29,9 @@ export async function sendMessage(
     where: eq(channels.id, channelId),
   });
   if (!channel) return { success: false, error: "Channel not found" };
+  if (channel.isArchived) {
+    return { success: false, error: "This chamber is archived" };
+  }
   if (channel.type === "private" && ctx.role !== "elder") {
     return { success: false, error: "Not authorized" };
   }

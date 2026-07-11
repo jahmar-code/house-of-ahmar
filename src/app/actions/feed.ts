@@ -13,7 +13,7 @@ import type { ActionResult } from "@/types";
 const uuid = z.string().uuid();
 
 export async function createPost(formData: FormData): Promise<ActionResult> {
-  const ctx = await requireAuth();
+  const ctx = await requireRole("member"); // guests are read-only
 
   const rawMediaUrls = formData.get("mediaUrls") as string | null;
   let mediaUrls: string[] | undefined;
@@ -34,10 +34,16 @@ export async function createPost(formData: FormData): Promise<ActionResult> {
     return { success: false, error: parsed.error.issues[0].message };
   }
 
+  // Announcements are elder-only; a non-elder attempt silently becomes a text post.
+  const type =
+    parsed.data.type === "announcement" && ctx.role !== "elder"
+      ? "text"
+      : parsed.data.type;
+
   await db.insert(posts).values({
     authorId: ctx.memberId,
     content: parsed.data.content,
-    type: parsed.data.type,
+    type,
     mediaUrls: parsed.data.mediaUrls ?? [],
   });
 
@@ -88,7 +94,7 @@ export async function deletePost(postId: string): Promise<ActionResult> {
 }
 
 export async function addComment(formData: FormData): Promise<ActionResult> {
-  const ctx = await requireAuth();
+  const ctx = await requireRole("member"); // guests are read-only
 
   const postId = formData.get("postId") as string;
   if (!uuid.safeParse(postId).success) {
@@ -122,13 +128,14 @@ export async function toggleReaction(
   postId: string,
   emoji: string
 ): Promise<ActionResult> {
-  const ctx = await requireAuth();
+  const ctx = await requireRole("member"); // guests are read-only
 
   if (!uuid.safeParse(postId).success) {
     return { success: false, error: "Invalid post" };
   }
-  // Only the fixed reaction set may be stored (it is later rendered verbatim).
-  if (!REACTION_EMOJIS.some((r) => r.emoji === emoji)) {
+  // The client sends the reaction KEY ("heart"), which is what the column
+  // stores and post-card renders by — validate against the key, not the emoji.
+  if (!REACTION_EMOJIS.some((r) => r.key === emoji)) {
     return { success: false, error: "Invalid reaction" };
   }
 

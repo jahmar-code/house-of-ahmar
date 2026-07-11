@@ -36,7 +36,7 @@ export async function validateAccessCode(
   }
 
   const defaultCode = process.env.HOA_DEFAULT_ACCESS_CODE;
-  if (defaultCode && parsed.data.code === defaultCode.toUpperCase()) {
+  if (defaultCode && parsed.data.code === defaultCode.trim().toUpperCase()) {
     await ensureBootstrapCodeRow(parsed.data.code);
     return { success: true };
   }
@@ -76,6 +76,18 @@ export async function completeInitiation(
     where: eq(members.authUserId, user.id),
   });
   if (existing) {
+    // Idempotent + self-healing: a prior updateUser may have failed, leaving
+    // user_metadata.hoa_member_id unset → the proxy loops /dashboard ↔ /initiation.
+    // Re-sync it (and surface any error) on every retry.
+    const { error: syncErr } = await supabase.auth.updateUser({
+      data: { hoa_member_id: existing.id, hoa_role: existing.role },
+    });
+    if (syncErr) {
+      return {
+        success: false,
+        error: "Could not finish initiation — please try again.",
+      };
+    }
     return { success: true, data: { memberId: existing.id } };
   }
 
@@ -166,12 +178,21 @@ export async function completeInitiation(
     return { success: false, error: result.error };
   }
 
-  await supabase.auth.updateUser({
+  // The proxy gates membership on user_metadata.hoa_member_id — if this fails
+  // the member row exists but the user can't get in. Surface it so the client
+  // retries; the retry hits the existing-member branch above and re-syncs.
+  const { error: syncErr } = await supabase.auth.updateUser({
     data: {
       hoa_member_id: result.newMember.id,
       hoa_role: result.newMember.role,
     },
   });
+  if (syncErr) {
+    return {
+      success: false,
+      error: "Could not finish initiation — please try again.",
+    };
+  }
 
   return { success: true, data: { memberId: result.newMember.id } };
 }

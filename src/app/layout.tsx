@@ -18,9 +18,13 @@ const geistMono = Geist_Mono({
 // `--font-serif` is intentionally aliased to Inter so the legacy
 // `font-heading` utility still resolves to a real font without pulling in a
 // separate serif family.
-// Absolute origin for OG/Twitter image URLs + auth email links. Set
-// NEXT_PUBLIC_SITE_URL in production; the browser origin is used locally.
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+// Absolute origin for OG/Twitter image URLs + auth email links. Prefer an
+// explicit NEXT_PUBLIC_SITE_URL, fall back to the Vercel deploy URL, then local.
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL}`
+    : "http://localhost:3000");
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

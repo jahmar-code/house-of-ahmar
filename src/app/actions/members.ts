@@ -3,12 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { members } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { requireAuth, requireRole } from "@/lib/auth";
 import { profileSchema } from "@/lib/validators";
 import { logAudit } from "@/lib/audit";
 import type { ActionResult } from "@/types";
-import type { HoaRole } from "@/lib/constants";
+import { HOA_ROLES, type HoaRole } from "@/lib/constants";
 
 export async function updateProfile(
   formData: FormData
@@ -49,10 +49,25 @@ export async function updateMemberRole(
 ): Promise<ActionResult> {
   const ctx = await requireRole("elder");
 
+  if (!(HOA_ROLES as readonly string[]).includes(role)) {
+    return { success: false, error: "Invalid role" };
+  }
+
   const target = await db.query.members.findFirst({
     where: eq(members.id, memberId),
   });
   if (!target) return { success: false, error: "Member not found" };
+
+  // Never let the House lose its last active Elder (also blocks self-demotion).
+  if (target.role === "elder" && role !== "elder") {
+    const elders = await db
+      .select({ id: members.id })
+      .from(members)
+      .where(and(eq(members.role, "elder"), eq(members.isActive, true)));
+    if (elders.length <= 1) {
+      return { success: false, error: "The House must keep at least one Elder" };
+    }
+  }
 
   await db
     .update(members)
