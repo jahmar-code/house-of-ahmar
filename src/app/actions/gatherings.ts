@@ -6,8 +6,12 @@ import { gatherings, rsvps } from "@/lib/db/schema";
 import { eq, and, isNull, lt } from "drizzle-orm";
 import { requireAuth, requireRole } from "@/lib/auth";
 import { gatheringSchema } from "@/lib/validators";
+import { RSVP_STATUSES } from "@/lib/constants";
 import { logAudit } from "@/lib/audit";
+import { z } from "zod";
 import type { ActionResult } from "@/types";
+
+const uuid = z.string().uuid();
 
 export async function createGathering(
   formData: FormData
@@ -51,26 +55,35 @@ export async function updateRsvp(
 ): Promise<ActionResult> {
   const ctx = await requireAuth();
 
-  const existing = await db.query.rsvps.findFirst({
-    where: and(
-      eq(rsvps.gatheringId, gatheringId),
-      eq(rsvps.memberId, ctx.memberId)
-    ),
-  });
+  // These are runtime boundaries — the TS union is not a runtime guarantee.
+  if (!uuid.safeParse(gatheringId).success) {
+    return { success: false, error: "Invalid gathering" };
+  }
+  if (!(RSVP_STATUSES as readonly string[]).includes(status)) {
+    return { success: false, error: "Invalid RSVP status" };
+  }
 
-  if (existing) {
-    await db
-      .update(rsvps)
-      .set({ status, note: note ?? null, updatedAt: new Date() })
-      .where(eq(rsvps.id, existing.id));
-  } else {
-    await db.insert(rsvps).values({
+  const gathering = await db.query.gatherings.findFirst({
+    where: eq(gatherings.id, gatheringId),
+  });
+  if (!gathering || gathering.isCancelled || gathering.archivedAt) {
+    return { success: false, error: "This gathering is not available" };
+  }
+
+  const trimmedNote = note?.slice(0, 500) ?? null;
+  // Atomic upsert — a same-member double-submit can't throw the unique index.
+  await db
+    .insert(rsvps)
+    .values({
       gatheringId,
       memberId: ctx.memberId,
       status,
-      note: note ?? null,
+      note: trimmedNote,
+    })
+    .onConflictDoUpdate({
+      target: [rsvps.gatheringId, rsvps.memberId],
+      set: { status, note: trimmedNote, updatedAt: new Date() },
     });
-  }
 
   revalidatePath(`/gatherings/${gatheringId}`);
   revalidatePath("/gatherings");

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -15,6 +16,7 @@ interface SettingsFormProps {
 }
 
 export function SettingsForm({ initial }: SettingsFormProps) {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -24,6 +26,7 @@ export function SettingsForm({ initial }: SettingsFormProps) {
     const result = await updateHouseSettings(formData);
     if (result.success) {
       toast.success("House settings saved");
+      router.refresh();
     } else {
       toast.error(result.error);
     }

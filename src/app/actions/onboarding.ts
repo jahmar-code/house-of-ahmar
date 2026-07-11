@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
 import { members, accessCodes } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { accessCodeSchema, profileSchema } from "@/lib/validators";
 import type { ActionResult } from "@/types";
 
@@ -90,50 +90,88 @@ export async function completeInitiation(
     return { success: false, error: parsed.error.issues[0].message };
   }
 
-  const memberCount = await db.select().from(members);
-  const isFirstMember = memberCount.length === 0;
+  // The access code is the invite-only gate. The client `validateAccessCode`
+  // check is a UX nicety, NOT the security boundary — re-validate and redeem
+  // the code here, on the server, before creating the member.
+  const code = ((formData.get("accessCode") as string | null) ?? "")
+    .trim()
+    .toUpperCase();
+  if (!code) return { success: false, error: "An access code is required" };
+  const bootstrapCode = process.env.HOA_DEFAULT_ACCESS_CODE?.trim().toUpperCase();
+  const isBootstrap = !!bootstrapCode && code === bootstrapCode;
 
-  const [newMember] = await db
-    .insert(members)
-    .values({
-      authUserId: user.id,
-      displayName: parsed.data.displayName,
-      fullName: parsed.data.fullName ?? null,
-      email: user.email ?? null,
-      phone: parsed.data.phone ?? null,
-      bio: parsed.data.bio ?? null,
-      birthday: parsed.data.birthday ?? null,
-      role: isFirstMember ? "elder" : "member",
-      avatarUrl: null,
-    })
-    .returning();
+  // One transaction, serialized by a transaction-scoped advisory lock, so the
+  // "first member becomes Elder" check and the code redemption are race-free
+  // (pooler-safe: xact-level locks release on commit).
+  const result = await db.transaction(async (tx) => {
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(728100)`);
+
+    // The env bootstrap code is tracked as a normal access_codes row.
+    if (isBootstrap) {
+      await tx
+        .insert(accessCodes)
+        .values({ code, label: "Bootstrap (env)", maxUses: 1000 })
+        .onConflictDoNothing({ target: accessCodes.code });
+    }
+
+    const codeRecord = await tx.query.accessCodes.findFirst({
+      where: eq(accessCodes.code, code),
+    });
+    if (!codeRecord || codeRecord.status !== "active") {
+      return { ok: false as const, error: "Invalid or expired access code" };
+    }
+    if (codeRecord.maxUses != null && codeRecord.useCount >= codeRecord.maxUses) {
+      return { ok: false as const, error: "This code has been fully used" };
+    }
+    if (codeRecord.expiresAt && new Date(codeRecord.expiresAt) < new Date()) {
+      return { ok: false as const, error: "This code has expired" };
+    }
+
+    const memberCount = await tx.select().from(members);
+    const isFirstMember = memberCount.length === 0;
+
+    const [newMember] = await tx
+      .insert(members)
+      .values({
+        authUserId: user.id,
+        displayName: parsed.data.displayName,
+        fullName: parsed.data.fullName ?? null,
+        email: user.email ?? null,
+        phone: parsed.data.phone ?? null,
+        bio: parsed.data.bio ?? null,
+        birthday: parsed.data.birthday ?? null,
+        role: isFirstMember ? "elder" : "member",
+        avatarUrl: null,
+      })
+      .returning();
+
+    // Atomically redeem: increment the count and flip to "used" once consumed.
+    const willBeUsed =
+      codeRecord.maxUses != null && codeRecord.useCount + 1 >= codeRecord.maxUses;
+    await tx
+      .update(accessCodes)
+      .set({
+        useCount: sql`${accessCodes.useCount} + 1`,
+        usedBy: newMember.id,
+        ...(willBeUsed ? { status: "used" as const } : {}),
+      })
+      .where(
+        and(eq(accessCodes.id, codeRecord.id), eq(accessCodes.status, "active"))
+      );
+
+    return { ok: true as const, newMember };
+  });
+
+  if (!result.ok) {
+    return { success: false, error: result.error };
+  }
 
   await supabase.auth.updateUser({
     data: {
-      hoa_member_id: newMember.id,
-      hoa_role: newMember.role,
+      hoa_member_id: result.newMember.id,
+      hoa_role: result.newMember.role,
     },
   });
 
-  const usedCode = formData.get("accessCode") as string | null;
-  if (usedCode) {
-    const codeRecord = await db.query.accessCodes.findFirst({
-      where: eq(accessCodes.code, usedCode.toUpperCase()),
-    });
-    if (codeRecord) {
-      await db
-        .update(accessCodes)
-        .set({
-          useCount: codeRecord.useCount + 1,
-          usedBy: newMember.id,
-          status:
-            codeRecord.maxUses && codeRecord.useCount + 1 >= codeRecord.maxUses
-              ? "used"
-              : "active",
-        })
-        .where(eq(accessCodes.id, codeRecord.id));
-    }
-  }
-
-  return { success: true, data: { memberId: newMember.id } };
+  return { success: true, data: { memberId: result.newMember.id } };
 }

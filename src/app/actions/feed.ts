@@ -6,7 +6,11 @@ import { posts, comments, reactions } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { requireAuth, requireRole } from "@/lib/auth";
 import { postSchema, commentSchema } from "@/lib/validators";
+import { REACTION_EMOJIS } from "@/lib/constants";
+import { z } from "zod";
 import type { ActionResult } from "@/types";
+
+const uuid = z.string().uuid();
 
 export async function createPost(formData: FormData): Promise<ActionResult> {
   const ctx = await requireAuth();
@@ -87,13 +91,21 @@ export async function addComment(formData: FormData): Promise<ActionResult> {
   const ctx = await requireAuth();
 
   const postId = formData.get("postId") as string;
-  if (!postId) return { success: false, error: "Post ID required" };
+  if (!uuid.safeParse(postId).success) {
+    return { success: false, error: "Invalid post" };
+  }
 
   const parsed = commentSchema.safeParse({
     content: formData.get("content"),
   });
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0].message };
+  }
+
+  // Don't accept comments on a missing or soft-deleted post.
+  const post = await db.query.posts.findFirst({ where: eq(posts.id, postId) });
+  if (!post || post.isDeleted) {
+    return { success: false, error: "Post not found" };
   }
 
   await db.insert(comments).values({
@@ -112,6 +124,14 @@ export async function toggleReaction(
 ): Promise<ActionResult> {
   const ctx = await requireAuth();
 
+  if (!uuid.safeParse(postId).success) {
+    return { success: false, error: "Invalid post" };
+  }
+  // Only the fixed reaction set may be stored (it is later rendered verbatim).
+  if (!REACTION_EMOJIS.some((r) => r.emoji === emoji)) {
+    return { success: false, error: "Invalid reaction" };
+  }
+
   const existing = await db.query.reactions.findFirst({
     where: and(
       eq(reactions.postId, postId),
@@ -123,11 +143,17 @@ export async function toggleReaction(
   if (existing) {
     await db.delete(reactions).where(eq(reactions.id, existing.id));
   } else {
-    await db.insert(reactions).values({
-      postId,
-      memberId: ctx.memberId,
-      emoji,
-    });
+    // Race-safe: a fast double-tap can't throw the unique-constraint violation.
+    await db
+      .insert(reactions)
+      .values({
+        postId,
+        memberId: ctx.memberId,
+        emoji,
+      })
+      .onConflictDoNothing({
+        target: [reactions.postId, reactions.memberId, reactions.emoji],
+      });
   }
 
   revalidatePath("/feed");

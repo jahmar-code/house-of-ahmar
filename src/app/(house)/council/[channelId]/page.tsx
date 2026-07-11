@@ -30,6 +30,8 @@ export default async function ChannelPage({
     where: eq(channels.id, channelId),
   });
   if (!channel) notFound();
+  // Private chambers are elder-only — hide from everyone else.
+  if (channel.type === "private" && ctx?.role !== "elder") notFound();
 
   const channelMessages = await db.query.messages.findMany({
     where: and(

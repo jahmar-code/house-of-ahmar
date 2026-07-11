@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -11,6 +12,7 @@ import { toast } from "sonner";
 import { Plus } from "lucide-react";
 
 export function CreateChannelForm() {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -23,6 +25,7 @@ export function CreateChannelForm() {
     if (result.success) {
       toast.success("Chamber created");
       form.reset();
+      router.refresh();
     } else {
       toast.error(result.error);
     }

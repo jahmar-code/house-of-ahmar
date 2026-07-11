@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -10,17 +11,21 @@ import { Plus } from "lucide-react";
 import { createAccessCode } from "@/app/actions/admin";
 
 export function CreateCodeForm() {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
 
-    const formData = new FormData(e.currentTarget);
-    const result = await createAccessCode(formData);
+    // Capture the form before awaiting — React nulls e.currentTarget after the
+    // synchronous phase, so reading it post-await throws.
+    const form = e.currentTarget;
+    const result = await createAccessCode(new FormData(form));
     if (result.success) {
       toast.success("Access code created");
-      e.currentTarget.reset();
+      form.reset();
+      router.refresh();
     } else {
       toast.error(result.error);
     }
@@ -53,6 +58,20 @@ export function CreateCodeForm() {
               min={1}
               defaultValue={1}
               className="h-9 w-20 bg-muted/40 text-sm"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="expiresInDays" className="text-xs">
+              Expires (days)
+            </Label>
+            <Input
+              id="expiresInDays"
+              name="expiresInDays"
+              type="number"
+              min={1}
+              max={365}
+              placeholder="Never"
+              className="h-9 w-24 bg-muted/40 text-sm"
             />
           </div>
           <Button type="submit" disabled={loading}>

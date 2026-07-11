@@ -15,9 +15,11 @@ export async function createAccessCode(
 ): Promise<ActionResult<{ code: string }>> {
   const ctx = await requireRole("elder");
 
+  const expiresInDaysRaw = formData.get("expiresInDays");
   const parsed = createAccessCodeSchema.safeParse({
     label: formData.get("label") || undefined,
     maxUses: Number(formData.get("maxUses")) || 1,
+    expiresInDays: expiresInDaysRaw ? Number(expiresInDaysRaw) : undefined,
   });
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0].message };
@@ -26,12 +28,17 @@ export async function createAccessCode(
   // Generate a random 8-char uppercase code
   const code = crypto.randomBytes(4).toString("hex").toUpperCase();
 
+  const expiresAt = parsed.data.expiresInDays
+    ? new Date(Date.now() + parsed.data.expiresInDays * 86_400_000)
+    : null;
+
   const [created] = await db
     .insert(accessCodes)
     .values({
       code,
       label: parsed.data.label ?? null,
       maxUses: parsed.data.maxUses,
+      expiresAt,
       createdBy: ctx.memberId,
     })
     .returning();
@@ -45,6 +52,7 @@ export async function createAccessCode(
       code,
       label: parsed.data.label ?? null,
       maxUses: parsed.data.maxUses,
+      expiresInDays: parsed.data.expiresInDays ?? null,
     },
   });
 

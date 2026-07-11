@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,6 +25,7 @@ export function PostForm({ memberId, role }: PostFormProps) {
   const [mode, setMode] = useState<Mode>("text");
   const [loading, setLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
 
   const isElder = role === "elder";
 
@@ -88,6 +90,7 @@ export function PostForm({ memberId, role }: PostFormProps) {
       toast.success(
         mode === "announcement" ? "Announcement posted" : "Posted to The Wall"
       );
+      router.refresh();
     } else {
       toast.error(result.error);
     }

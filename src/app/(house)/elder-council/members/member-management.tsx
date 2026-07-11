@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,22 +33,30 @@ interface MemberManagementProps {
 }
 
 export function MemberManagement({ members }: MemberManagementProps) {
+  const router = useRouter();
+
   async function handleRoleChange(memberId: string, role: HoaRole) {
     const result = await updateMemberRole(memberId, role);
-    if (result.success) toast.success("Role updated");
-    else toast.error(result.error);
+    if (result.success) {
+      toast.success("Role updated");
+      router.refresh();
+    } else toast.error(result.error);
   }
 
   async function handleDeactivate(memberId: string) {
     const result = await deactivateMember(memberId);
-    if (result.success) toast.success("Member deactivated");
-    else toast.error(result.error);
+    if (result.success) {
+      toast.success("Member deactivated");
+      router.refresh();
+    } else toast.error(result.error);
   }
 
   async function handleReactivate(memberId: string) {
     const result = await reactivateMember(memberId);
-    if (result.success) toast.success("Member reactivated");
-    else toast.error(result.error);
+    if (result.success) {
+      toast.success("Member reactivated");
+      router.refresh();
+    } else toast.error(result.error);
   }
 
   return (

@@ -41,7 +41,7 @@ export default async function GatheringsPage() {
         )}
       </PageHeader>
 
-      {allGatherings.length === 0 ? (
+      {upcoming.length === 0 && past.length === 0 ? (
         <EmptyState
           icon={Calendar}
           title="No gatherings yet"

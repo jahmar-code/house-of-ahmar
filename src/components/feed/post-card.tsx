@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,7 @@ export function PostCard({ post, currentMemberId, currentRole }: PostCardProps) 
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const router = useRouter();
 
   const canDelete =
     post.authorId === currentMemberId || currentRole === "elder";
@@ -40,21 +42,26 @@ export function PostCard({ post, currentMemberId, currentRole }: PostCardProps) 
 
   async function handleDelete() {
     const result = await deletePost(post.id);
-    if (result.success) toast.success("Post removed");
-    else toast.error(result.error);
+    if (result.success) {
+      toast.success("Post removed");
+      router.refresh();
+    } else toast.error(result.error);
   }
 
   async function handleTogglePin() {
     const result = await togglePostPin(post.id);
     if (result.success) {
       toast.success(post.isPinned ? "Post unpinned" : "Post pinned");
+      router.refresh();
     } else {
       toast.error(result.error);
     }
   }
 
   async function handleReaction(emoji: string) {
-    await toggleReaction(post.id, emoji);
+    const result = await toggleReaction(post.id, emoji);
+    if (result.success) router.refresh();
+    else toast.error(result.error);
   }
 
   async function handleComment(e: React.FormEvent) {
@@ -69,6 +76,7 @@ export function PostCard({ post, currentMemberId, currentRole }: PostCardProps) 
     const result = await addComment(formData);
     if (result.success) {
       setCommentText("");
+      router.refresh();
     } else {
       toast.error(result.error);
     }

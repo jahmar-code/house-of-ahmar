@@ -23,6 +23,16 @@ export async function sendMessage(
     return { success: false, error: parsed.error.issues[0].message };
   }
 
+  // Private chambers (e.g. "Elders Only") are elder-only to read AND post.
+  // channel.type is not just a label — enforce it server-side.
+  const channel = await db.query.channels.findFirst({
+    where: eq(channels.id, channelId),
+  });
+  if (!channel) return { success: false, error: "Channel not found" };
+  if (channel.type === "private" && ctx.role !== "elder") {
+    return { success: false, error: "Not authorized" };
+  }
+
   await db.insert(messages).values({
     channelId,
     authorId: ctx.memberId,
@@ -69,10 +79,22 @@ export async function createChannel(
     return { success: false, error: parsed.error.issues[0].message };
   }
 
-  const slug = parsed.data.name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
+  const slug =
+    parsed.data.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "") || "chamber";
+
+  // Slug is UNIQUE — surface a clean error instead of a raw DB constraint throw.
+  const slugTaken = await db.query.channels.findFirst({
+    where: eq(channels.slug, slug),
+  });
+  if (slugTaken) {
+    return {
+      success: false,
+      error: "A chamber with a similar name already exists",
+    };
+  }
 
   const [channel] = await db
     .insert(channels)
@@ -94,5 +116,6 @@ export async function createChannel(
   });
 
   revalidatePath("/council");
+  revalidatePath("/elder-council/channels");
   return { success: true, data: { id: channel.id } };
 }

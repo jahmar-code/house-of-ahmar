@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { format, differenceInDays, setYear } from "date-fns";
+import { format, differenceInCalendarDays, startOfToday } from "date-fns";
 import type { Member } from "@/types";
 
 interface UpcomingBirthdaysProps {
@@ -8,18 +8,26 @@ interface UpcomingBirthdaysProps {
 }
 
 export function UpcomingBirthdays({ members }: UpcomingBirthdaysProps) {
-  const now = new Date();
-  const currentYear = now.getFullYear();
+  const today = startOfToday();
+  const currentYear = today.getFullYear();
 
   const upcoming = members
     .filter((m) => m.birthday)
     .map((m) => {
-      const bday = new Date(m.birthday!);
-      let nextBirthday = setYear(bday, currentYear);
-      if (nextBirthday < now) {
-        nextBirthday = setYear(bday, currentYear + 1);
+      // `birthday` is a 'YYYY-MM-DD' date string. Build a LOCAL calendar date
+      // (never `new Date(str)`, which parses as UTC midnight and lands a day
+      // early in negative-UTC zones), and count in whole calendar days so a
+      // birthday today reads as 0 ("Today!").
+      const [, mo, d] = m.birthday!.split("-").map(Number);
+      let nextBirthday = new Date(currentYear, mo - 1, d);
+      if (differenceInCalendarDays(nextBirthday, today) < 0) {
+        nextBirthday = new Date(currentYear + 1, mo - 1, d);
       }
-      return { member: m, nextBirthday, daysUntil: differenceInDays(nextBirthday, now) };
+      return {
+        member: m,
+        nextBirthday,
+        daysUntil: differenceInCalendarDays(nextBirthday, today),
+      };
     })
     .sort((a, b) => a.daysUntil - b.daysUntil)
     .slice(0, 5);

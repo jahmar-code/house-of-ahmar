@@ -43,7 +43,17 @@ export async function GET(request: NextRequest) {
 
 /** Only allow same-site relative redirects to avoid open-redirect abuse. */
 function sanitizeNext(next: string | null): string {
-  if (next && next.startsWith("/") && !next.startsWith("//")) return next;
+  // Must be a root-relative path. Reject protocol-relative ("//host") and
+  // backslashes ("/\host"), which the WHATWG URL parser normalizes to "/",
+  // both of which would escape to an off-site origin.
+  if (
+    next &&
+    next.startsWith("/") &&
+    !next.startsWith("//") &&
+    !next.includes("\\")
+  ) {
+    return next;
+  }
   return "/initiation";
 }
 

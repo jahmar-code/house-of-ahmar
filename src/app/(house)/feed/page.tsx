@@ -14,9 +14,11 @@ export default async function FeedPage() {
   const allPosts = await db.query.posts.findMany({
     where: eq(posts.isDeleted, false),
     orderBy: [desc(posts.isPinned), desc(posts.createdAt)],
+    limit: 50,
     with: {
       author: true,
       comments: {
+        where: (comments, { eq }) => eq(comments.isDeleted, false),
         with: { author: true },
         orderBy: (comments, { asc }) => [asc(comments.createdAt)],
       },
