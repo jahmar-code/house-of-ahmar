@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
+import { getURL } from "@/lib/get-url";
 
 export function SignUpForm() {
   const router = useRouter();
@@ -23,6 +24,11 @@ export function SignUpForm() {
     const { data, error: authError } = await supabase.auth.signUp({
       email: String(formData.get("email") ?? ""),
       password: String(formData.get("password") ?? ""),
+      options: {
+        // Send the confirmation link back to our callback on the *current*
+        // origin so it never points at localhost in production.
+        emailRedirectTo: getURL("/auth/confirm?next=/initiation"),
+      },
     });
 
     if (authError) {
@@ -69,23 +75,26 @@ export function SignUpForm() {
       </div>
 
       {error && (
-        <p className="text-sm text-destructive text-center">{error}</p>
+        <p role="alert" className="text-center text-sm text-destructive">
+          {error}
+        </p>
       )}
       {notice && (
-        <p className="text-sm text-gold text-center">{notice}</p>
+        <p role="status" className="text-center text-sm text-primary">
+          {notice}
+        </p>
       )}
 
-      <Button
-        type="submit"
-        disabled={loading}
-        className="h-12 w-full bg-gold text-gold-foreground hover:bg-gold/90"
-      >
+      <Button type="submit" disabled={loading} className="h-11 w-full">
         {loading ? "Creating..." : "Request Entry"}
       </Button>
 
-      <p className="text-center text-xs text-muted-foreground/60">
+      <p className="text-center text-xs text-muted-foreground">
         Already a member?{" "}
-        <Link href="/sign-in" className="text-gold hover:underline">
+        <Link
+          href="/sign-in"
+          className="text-primary underline-offset-4 hover:underline"
+        >
           Enter the House
         </Link>
       </p>

@@ -1,13 +1,16 @@
 import Link from "next/link";
+import { Compass } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export default function NotFound() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center px-6">
-        <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full border border-gold/20 bg-card">
-          <span className="font-heading text-3xl font-bold text-gold/50">?</span>
+    <div className="flex min-h-screen items-center justify-center bg-background px-6">
+      <div className="text-center">
+        <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full border border-border bg-card">
+          <Compass className="h-8 w-8 text-muted-foreground" aria-hidden="true" />
         </div>
-        <h1 className="font-heading text-2xl font-bold text-foreground">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">
           You have wandered beyond the walls.
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
@@ -15,7 +18,7 @@ export default function NotFound() {
         </p>
         <Link
           href="/dashboard"
-          className="mt-6 inline-flex h-10 items-center justify-center rounded-md border border-gold/30 bg-gold/10 px-6 text-sm text-gold transition-colors hover:bg-gold/20"
+          className={cn(buttonVariants({ variant: "outline", size: "lg" }), "mt-8")}
         >
           Return to the Great Hall
         </Link>

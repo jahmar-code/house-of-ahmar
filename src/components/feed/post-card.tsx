@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { formatDistanceToNow } from "date-fns";
 import {
   deletePost,
@@ -14,7 +15,7 @@ import {
 } from "@/app/actions/feed";
 import { REACTION_EMOJIS } from "@/lib/constants";
 import { toast } from "sonner";
-import { MessageCircle, Trash2, Pin, PinOff } from "lucide-react";
+import { MessageCircle, Trash2, Pin, PinOff, Megaphone } from "lucide-react";
 import type { Post, Member, Comment, Reaction } from "@/types";
 import type { HoaRole } from "@/lib/constants";
 
@@ -89,42 +90,44 @@ export function PostCard({ post, currentMemberId, currentRole }: PostCardProps) 
   );
 
   const isAnnouncement = post.type === "announcement";
+  const isHighlighted = isAnnouncement || post.isPinned;
 
   return (
     <Card
-      className={`border-border bg-card ${
-        isAnnouncement ? "ring-1 ring-gold/30" : ""
-      }`}
+      className={
+        isHighlighted ? "border-primary/20 ring-1 ring-primary/30" : ""
+      }
     >
-      <CardContent className="p-4">
+      <CardContent className="p-4 sm:p-5">
         {/* Author header */}
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-3">
             <Avatar className="h-10 w-10">
               <AvatarImage src={post.author.avatarUrl ?? undefined} />
-              <AvatarFallback className="bg-gold/10 text-sm text-gold">
+              <AvatarFallback className="bg-primary/10 text-sm text-primary">
                 {post.author.displayName.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-foreground">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span className="truncate text-sm font-semibold text-foreground">
                   {post.author.displayName}
                 </span>
                 {isAnnouncement && (
                   <Badge
                     variant="outline"
-                    className="border-gold/30 text-gold text-[10px]"
+                    className="gap-1 border-primary/30 bg-primary/10 text-[10px] text-primary"
                   >
+                    <Megaphone className="h-2.5 w-2.5" />
                     Announcement
                   </Badge>
                 )}
                 {post.isPinned && (
                   <Badge
                     variant="outline"
-                    className="border-gold/30 text-gold text-[10px] gap-1"
+                    className="gap-1 text-[10px] text-muted-foreground"
                   >
-                    <Pin className="h-2.5 w-2.5" />
+                    <Pin className="h-2.5 w-2.5 text-primary" />
                     Pinned
                   </Badge>
                 )}
@@ -137,12 +140,12 @@ export function PostCard({ post, currentMemberId, currentRole }: PostCardProps) 
             </div>
           </div>
 
-          <div className="flex items-center">
+          <div className="flex shrink-0 items-center gap-0.5">
             {canPin && (
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-gold"
+                className="text-muted-foreground hover:text-primary"
                 onClick={handleTogglePin}
                 aria-label={post.isPinned ? "Unpin post" : "Pin post"}
               >
@@ -157,8 +160,9 @@ export function PostCard({ post, currentMemberId, currentRole }: PostCardProps) 
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                className="text-muted-foreground hover:text-destructive"
                 onClick={handleDelete}
+                aria-label="Remove post"
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -168,99 +172,129 @@ export function PostCard({ post, currentMemberId, currentRole }: PostCardProps) 
 
         {/* Content */}
         {post.content && post.content.trim() && (
-          <p className="mt-3 whitespace-pre-wrap text-sm text-foreground leading-relaxed">
+          <p className="mt-3 text-sm leading-relaxed whitespace-pre-wrap break-words text-foreground">
             {post.content}
           </p>
         )}
 
         {/* Media */}
         {post.mediaUrls && (post.mediaUrls as string[]).length > 0 && (
-          <div className={`mt-3 grid gap-2 ${(post.mediaUrls as string[]).length === 1 ? "" : "grid-cols-2"}`}>
+          <div
+            className={`mt-3 grid gap-2 ${
+              (post.mediaUrls as string[]).length === 1 ? "" : "grid-cols-2"
+            }`}
+          >
             {(post.mediaUrls as string[]).map((url, i) => (
               <img
                 key={i}
                 src={url}
                 alt=""
-                className="w-full rounded-md object-cover max-h-80"
+                className="max-h-80 w-full rounded-lg border border-border object-cover"
               />
             ))}
           </div>
         )}
 
-        {/* Reactions */}
-        <div className="mt-3 flex flex-wrap items-center gap-1.5">
-          {REACTION_EMOJIS.map(({ key, emoji }) => {
-            const count = reactionCounts[key] || 0;
-            const isActive = myReactions.has(key);
-            return (
-              <button
-                key={key}
-                onClick={() => handleReaction(key)}
-                className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs transition-colors ${
-                  isActive
-                    ? "border-gold/40 bg-gold/10 text-foreground"
-                    : "border-border bg-secondary/30 text-muted-foreground hover:border-gold/20"
-                }`}
-              >
-                <span>{emoji}</span>
-                {count > 0 && <span>{count}</span>}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Comments toggle */}
-        <button
-          onClick={() => setShowComments(!showComments)}
-          className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <MessageCircle className="h-3.5 w-3.5" />
-          {post.comments.length} comment{post.comments.length !== 1 ? "s" : ""}
-        </button>
-
-        {/* Comments section */}
-        {showComments && (
-          <div className="mt-3 space-y-3 border-t border-border pt-3">
-            {post.comments.map((comment) => (
-              <div key={comment.id} className="flex items-start gap-2">
-                <Avatar className="h-6 w-6">
-                  <AvatarImage src={comment.author.avatarUrl ?? undefined} />
-                  <AvatarFallback className="bg-gold/10 text-[10px] text-gold">
-                    {comment.author.displayName.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <span className="text-xs font-medium text-foreground">
-                    {comment.author.displayName}
-                  </span>
-                  <p className="text-xs text-muted-foreground">
-                    {comment.content}
-                  </p>
-                </div>
-              </div>
-            ))}
-
-            {currentRole !== "guest" && (
-              <form onSubmit={handleComment} className="flex gap-2">
-                <input
-                  type="text"
-                  value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
-                  placeholder="Add a comment..."
-                  className="flex-1 rounded-md border border-border bg-secondary/30 px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-gold/30"
-                />
-                <Button
-                  type="submit"
-                  size="sm"
-                  disabled={submitting || !commentText.trim()}
-                  className="h-7 bg-gold/20 text-gold text-xs hover:bg-gold/30"
+        {/* Engagement bar */}
+        <div className="mt-4 border-t border-border pt-3">
+          {/* Reactions */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {REACTION_EMOJIS.map(({ key, emoji }) => {
+              const count = reactionCounts[key] || 0;
+              const isActive = myReactions.has(key);
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => handleReaction(key)}
+                  aria-pressed={isActive}
+                  aria-label={`React ${key}${count > 0 ? `, ${count}` : ""}`}
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-2 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 ${
+                    isActive
+                      ? "border-primary/40 bg-primary/10 text-foreground"
+                      : "border-border bg-muted/40 text-muted-foreground hover:border-foreground/20 hover:text-foreground"
+                  }`}
                 >
-                  Reply
-                </Button>
-              </form>
-            )}
+                  <span className="text-sm leading-none">{emoji}</span>
+                  {count > 0 && (
+                    <span className="tabular-nums font-medium">{count}</span>
+                  )}
+                </button>
+              );
+            })}
           </div>
-        )}
+
+          {/* Comments toggle */}
+          <button
+            type="button"
+            onClick={() => setShowComments(!showComments)}
+            aria-expanded={showComments}
+            className="mt-3 inline-flex items-center gap-1.5 rounded-md py-1 pr-1 text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          >
+            <MessageCircle className="h-3.5 w-3.5" />
+            {post.comments.length} comment
+            {post.comments.length !== 1 ? "s" : ""}
+          </button>
+
+          {/* Comments section */}
+          {showComments && (
+            <div className="mt-3 space-y-3 border-t border-border pt-3">
+              {post.comments.map((comment) => (
+                <div key={comment.id} className="flex items-start gap-2.5">
+                  <Avatar className="h-7 w-7">
+                    <AvatarImage src={comment.author.avatarUrl ?? undefined} />
+                    <AvatarFallback className="bg-primary/10 text-[10px] text-primary">
+                      {comment.author.displayName.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-x-2">
+                      <span className="text-xs font-medium text-foreground">
+                        {comment.author.displayName}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground">
+                        {formatDistanceToNow(new Date(comment.createdAt), {
+                          addSuffix: true,
+                        })}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-xs leading-relaxed whitespace-pre-wrap break-words text-foreground/80">
+                      {comment.content}
+                    </p>
+                  </div>
+                </div>
+              ))}
+
+              {post.comments.length === 0 && (
+                <p className="text-xs text-muted-foreground">No comments yet.</p>
+              )}
+
+              {currentRole !== "guest" && (
+                <form
+                  onSubmit={handleComment}
+                  className="flex items-center gap-2"
+                >
+                  <Input
+                    type="text"
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    placeholder="Add a comment..."
+                    aria-label="Add a comment"
+                    className="flex-1 bg-muted/40"
+                  />
+                  <Button
+                    type="submit"
+                    variant="secondary"
+                    disabled={submitting || !commentText.trim()}
+                    className="shrink-0"
+                  >
+                    Reply
+                  </Button>
+                </form>
+              )}
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

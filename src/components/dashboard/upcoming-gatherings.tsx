@@ -12,13 +12,13 @@ export function UpcomingGatherings({ gatherings }: UpcomingGatheringsProps) {
   return (
     <Card className="border-border bg-card">
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="font-heading text-lg">
+        <div className="flex items-center justify-between gap-3">
+          <CardTitle className="text-base font-semibold tracking-tight text-foreground">
             Upcoming Gatherings
           </CardTitle>
           <Link
             href="/gatherings"
-            className="text-xs text-gold hover:text-gold/80"
+            className="rounded-lg px-1 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
           >
             View all
           </Link>
@@ -30,23 +30,23 @@ export function UpcomingGatherings({ gatherings }: UpcomingGatheringsProps) {
             No gatherings planned yet.
           </p>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {gatherings.map((gathering) => (
               <Link
                 key={gathering.id}
                 href={`/gatherings/${gathering.id}`}
-                className="flex items-start gap-3 rounded-md border border-border bg-secondary/20 p-3 transition-colors hover:bg-secondary/40"
+                className="flex items-start gap-3 rounded-lg border border-border bg-secondary/20 p-3 transition-colors hover:border-foreground/20 hover:bg-secondary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
               >
-                <div className="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-md border border-gold/20 bg-gold/5 text-gold">
-                  <span className="text-xs font-medium leading-none">
+                <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
+                  <span className="text-[10px] font-medium uppercase leading-none tracking-wide">
                     {format(new Date(gathering.startsAt), "MMM")}
                   </span>
-                  <span className="text-sm font-bold leading-none">
+                  <span className="mt-0.5 text-sm font-bold leading-none">
                     {format(new Date(gathering.startsAt), "d")}
                   </span>
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium text-foreground truncate">
+                  <p className="truncate font-medium text-foreground">
                     {gathering.title}
                   </p>
                   <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">

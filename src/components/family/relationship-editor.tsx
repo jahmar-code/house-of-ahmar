@@ -58,20 +58,13 @@ export function RelationshipEditor({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          <Button
-            size="sm"
-            className="bg-gold text-gold-foreground hover:bg-gold/90"
-          />
-        }
-      >
+      <DialogTrigger render={<Button size="sm" />}>
         <GitBranch className="mr-2 h-4 w-4" />
         {triggerLabel}
       </DialogTrigger>
       <DialogContent className="border-border bg-card">
         <DialogHeader>
-          <DialogTitle className="font-heading text-xl text-foreground">
+          <DialogTitle className="text-lg font-semibold tracking-tight text-foreground">
             Add a parent → child link
           </DialogTitle>
           <DialogDescription>
@@ -83,14 +76,14 @@ export function RelationshipEditor({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="parentId">
-              Parent <span className="text-crimson">*</span>
+              Parent <span className="text-destructive">*</span>
             </Label>
             <select
               id="parentId"
               name="parentId"
               required
               defaultValue={defaultParentId ?? ""}
-              className="h-11 w-full rounded-md border border-border bg-secondary/30 px-3 text-sm text-foreground"
+              className="h-11 w-full rounded-lg border border-input bg-transparent px-3 text-sm text-foreground transition-colors outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 dark:bg-input/30"
             >
               <option value="" disabled>
                 Select parent…
@@ -105,14 +98,14 @@ export function RelationshipEditor({
 
           <div className="space-y-2">
             <Label htmlFor="childId">
-              Child <span className="text-crimson">*</span>
+              Child <span className="text-destructive">*</span>
             </Label>
             <select
               id="childId"
               name="childId"
               required
               defaultValue={defaultChildId ?? ""}
-              className="h-11 w-full rounded-md border border-border bg-secondary/30 px-3 text-sm text-foreground"
+              className="h-11 w-full rounded-lg border border-input bg-transparent px-3 text-sm text-foreground transition-colors outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 dark:bg-input/30"
             >
               <option value="" disabled>
                 Select child…
@@ -133,11 +126,7 @@ export function RelationshipEditor({
             >
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={pending}
-              className="bg-gold text-gold-foreground hover:bg-gold/90"
-            >
+            <Button type="submit" disabled={pending}>
               <Plus className="mr-2 h-4 w-4" />
               {pending ? "Adding…" : "Add"}
             </Button>

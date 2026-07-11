@@ -4,7 +4,7 @@ import { GatheringForm } from "@/components/gatherings/gathering-form";
 export default function NewGatheringPage() {
   return (
     <div className="mx-auto max-w-2xl">
-      <PageHeader title="Plan a Gathering" />
+      <PageHeader title="Plan a Gathering" eyebrow="Gatherings" />
       <GatheringForm />
     </div>
   );

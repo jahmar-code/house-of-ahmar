@@ -50,11 +50,14 @@ export function MobileHeader({
 
   return (
     <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-background/95 px-4 backdrop-blur-sm supports-backdrop-filter:bg-background/80 lg:hidden">
-      <Link href="/dashboard" className="flex items-center gap-2.5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-full border border-gold/30 bg-card">
-          <span className="font-heading text-base font-bold text-gold">A</span>
-        </div>
-        <span className="font-heading text-base font-semibold text-foreground">
+      <Link
+        href="/dashboard"
+        className="group flex min-w-0 items-center gap-2.5 rounded-lg py-1 pr-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+      >
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-base font-bold text-primary-foreground">
+          A
+        </span>
+        <span className="truncate text-base font-semibold tracking-tight text-foreground">
           {houseName}
         </span>
       </Link>
@@ -62,7 +65,12 @@ export function MobileHeader({
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger
           render={
-            <Button variant="ghost" size="icon" aria-label="Open menu" />
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Open menu"
+              className="size-11"
+            />
           }
         >
           <Menu className="h-5 w-5" />
@@ -94,10 +102,10 @@ export function MobileHeader({
                   href={item.href}
                   onClick={() => setOpen(false)}
                   className={cn(
-                    "flex items-center gap-3 rounded-md px-3 py-3 text-sm font-medium transition-colors",
+                    "flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
                     isActive
-                      ? "bg-secondary text-gold"
-                      : "text-foreground/70 hover:bg-secondary/50 hover:text-foreground"
+                      ? "bg-muted text-primary"
+                      : "text-foreground/70 hover:bg-muted hover:text-foreground"
                   )}
                 >
                   <item.icon className="h-5 w-5" />
@@ -113,13 +121,13 @@ export function MobileHeader({
                   href="/elder-council"
                   onClick={() => setOpen(false)}
                   className={cn(
-                    "flex items-center gap-3 rounded-md px-3 py-3 text-sm font-medium transition-colors",
+                    "flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
                     isNavActive(pathname, "/elder-council")
-                      ? "bg-secondary text-gold"
-                      : "text-gold/70 hover:bg-secondary/50 hover:text-gold"
+                      ? "bg-muted text-primary"
+                      : "text-foreground/70 hover:bg-muted hover:text-foreground"
                   )}
                 >
-                  <Shield className="h-5 w-5" />
+                  <Shield className="h-5 w-5 text-primary" />
                   Elder Council
                 </Link>
               </>
@@ -131,7 +139,7 @@ export function MobileHeader({
             <button
               type="button"
               onClick={handleSignOut}
-              className="flex w-full items-center gap-3 rounded-md px-3 py-3 text-sm font-medium text-foreground/70 transition-colors hover:bg-secondary/50 hover:text-foreground"
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-foreground/70 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
             >
               <LogOut className="h-5 w-5" />
               Sign out

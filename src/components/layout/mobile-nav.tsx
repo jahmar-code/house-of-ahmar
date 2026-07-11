@@ -21,9 +21,9 @@ export function MobileNav() {
               href={item.href}
               aria-current={isActive ? "page" : undefined}
               className={cn(
-                "flex min-h-12 flex-1 flex-col items-center justify-center gap-1 py-2 text-[11px] font-medium transition-colors",
+                "flex min-h-12 flex-1 flex-col items-center justify-center gap-1 py-2 text-[11px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/50",
                 isActive
-                  ? "text-gold"
+                  ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >

@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
-import { Calendar, MapPin, User } from "lucide-react";
+import { Ban, Calendar, MapPin } from "lucide-react";
 import { RsvpButton } from "@/components/gatherings/rsvp-button";
 import { GatheringActions } from "@/components/gatherings/gathering-actions";
 
@@ -43,17 +43,18 @@ export default async function GatheringDetailPage({
       </PageHeader>
 
       {gathering.isCancelled && (
-        <div className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div className="mb-6 flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <Ban className="h-4 w-4 shrink-0" />
           This gathering has been cancelled.
         </div>
       )}
 
-      <Card className="border-border bg-card">
-        <CardContent className="space-y-6 p-6">
+      <Card>
+        <CardContent className="space-y-6 p-5 sm:p-6">
           {/* Details */}
           <div className="space-y-3">
             <div className="flex items-center gap-3 text-sm">
-              <Calendar className="h-4 w-4 text-gold" />
+              <Calendar className="h-4 w-4 shrink-0 text-primary" />
               <span className="text-foreground">
                 {format(new Date(gathering.startsAt), "EEEE, MMMM d, yyyy")}
                 {" at "}
@@ -64,12 +65,17 @@ export default async function GatheringDetailPage({
             </div>
             {gathering.location && (
               <div className="flex items-center gap-3 text-sm">
-                <MapPin className="h-4 w-4 text-gold" />
+                <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <span className="text-foreground">{gathering.location}</span>
               </div>
             )}
             <div className="flex items-center gap-3 text-sm">
-              <User className="h-4 w-4 text-muted-foreground" />
+              <Avatar size="sm" className="h-5 w-5">
+                <AvatarImage src={gathering.creator.avatarUrl ?? undefined} />
+                <AvatarFallback className="text-[10px] font-medium">
+                  {gathering.creator.displayName.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
               <span className="text-muted-foreground">
                 Organized by {gathering.creator.displayName}
               </span>
@@ -77,15 +83,15 @@ export default async function GatheringDetailPage({
           </div>
 
           {gathering.description && (
-            <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
               {gathering.description}
             </p>
           )}
 
           {/* RSVP */}
           {ctx?.role !== "guest" && (
-            <div className="border-t border-border pt-4">
-              <p className="mb-3 text-sm font-medium text-foreground">
+            <div className="border-t border-border pt-5">
+              <p className="mb-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Your Response
               </p>
               <RsvpButton
@@ -96,43 +102,53 @@ export default async function GatheringDetailPage({
           )}
 
           {/* Attendees */}
-          <div className="border-t border-border pt-4">
-            <p className="mb-3 text-sm font-medium text-foreground">
-              Attending ({attending.length})
+          <div className="border-t border-border pt-5">
+            <p className="mb-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Attending
+              <span className="ml-1.5 tabular-nums text-foreground/70">
+                {attending.length}
+              </span>
             </p>
-            <div className="flex flex-wrap gap-2">
-              {attending.map((rsvp) => (
-                <div
-                  key={rsvp.id}
-                  className="flex items-center gap-2 rounded-md border border-border bg-secondary/30 px-3 py-1.5"
-                >
-                  <Avatar className="h-5 w-5">
-                    <AvatarImage src={rsvp.member.avatarUrl ?? undefined} />
-                    <AvatarFallback className="bg-gold/10 text-[10px] text-gold">
-                      {rsvp.member.displayName.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="text-xs text-foreground">
-                    {rsvp.member.displayName}
-                  </span>
-                </div>
-              ))}
-            </div>
+            {attending.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No one yet.</p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {attending.map((rsvp) => (
+                  <div
+                    key={rsvp.id}
+                    className="flex items-center gap-2 rounded-full border border-border bg-muted/40 py-1 pl-1 pr-3 transition-colors hover:border-foreground/20"
+                  >
+                    <Avatar size="sm" className="h-6 w-6">
+                      <AvatarImage src={rsvp.member.avatarUrl ?? undefined} />
+                      <AvatarFallback className="text-[10px] font-medium">
+                        {rsvp.member.displayName.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-xs text-foreground">
+                      {rsvp.member.displayName}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {maybe.length > 0 && (
               <>
-                <p className="mb-3 mt-4 text-sm font-medium text-muted-foreground">
-                  Maybe ({maybe.length})
+                <p className="mb-3 mt-5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Maybe
+                  <span className="ml-1.5 tabular-nums text-foreground/70">
+                    {maybe.length}
+                  </span>
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {maybe.map((rsvp) => (
                     <div
                       key={rsvp.id}
-                      className="flex items-center gap-2 rounded-md border border-border bg-secondary/20 px-3 py-1.5"
+                      className="flex items-center gap-2 rounded-full border border-border bg-muted/40 py-1 pl-1 pr-3 transition-colors hover:border-foreground/20"
                     >
-                      <Avatar className="h-5 w-5">
+                      <Avatar size="sm" className="h-6 w-6">
                         <AvatarImage src={rsvp.member.avatarUrl ?? undefined} />
-                        <AvatarFallback className="bg-gold/10 text-[10px] text-gold">
+                        <AvatarFallback className="text-[10px] font-medium">
                           {rsvp.member.displayName.charAt(0)}
                         </AvatarFallback>
                       </Avatar>

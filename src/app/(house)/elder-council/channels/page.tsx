@@ -4,9 +4,10 @@ import { db } from "@/lib/db";
 import { channels } from "@/lib/db/schema";
 import { asc } from "drizzle-orm";
 import { PageHeader } from "@/components/shared/page-header";
+import { EmptyState } from "@/components/shared/empty-state";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Hash, Megaphone, Lock } from "lucide-react";
+import { Hash, Megaphone, Lock, MessageSquare } from "lucide-react";
 import { CreateChannelForm } from "./create-channel-form";
 
 const typeIcons = {
@@ -29,52 +30,85 @@ export default async function ManageChannelsPage() {
   return (
     <div>
       <PageHeader
+        eyebrow="Elder Council"
         title="Council Chambers"
         description="Create and manage chambers where the family gathers."
       />
 
       <CreateChannelForm />
 
-      <div className="mt-6 space-y-2">
-        {allChannels.map((channel) => {
-          const Icon = typeIcons[channel.type];
-          return (
-            <Card key={channel.id} className="border-border bg-card">
-              <CardContent className="flex items-center gap-3 p-4">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-secondary/30">
-                  <Icon className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-foreground">
-                      {channel.name}
-                    </span>
-                    <Badge
-                      variant="outline"
-                      className="border-border text-[10px] capitalize text-muted-foreground"
+      {allChannels.length === 0 ? (
+        <div className="mt-6">
+          <EmptyState
+            icon={MessageSquare}
+            title="No chambers yet"
+            description="Create a chamber above to open a space for the family to gather."
+          />
+        </div>
+      ) : (
+        <>
+          <p className="mt-8 mb-3 text-xs font-medium tracking-wider text-muted-foreground uppercase">
+            {allChannels.length}{" "}
+            {allChannels.length === 1 ? "chamber" : "chambers"}
+          </p>
+          <div className="space-y-2">
+            {allChannels.map((channel) => {
+              const Icon = typeIcons[channel.type];
+              const isAnnouncement = channel.type === "announcement";
+              return (
+                <Card
+                  key={channel.id}
+                  className="border-border bg-card transition-colors hover:border-foreground/20"
+                >
+                  <CardContent className="flex items-center gap-3 p-4">
+                    <div
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${
+                        isAnnouncement
+                          ? "border-primary/20 bg-primary/10"
+                          : "border-border bg-muted"
+                      }`}
                     >
-                      {channel.type}
-                    </Badge>
-                    {channel.isArchived && (
-                      <Badge
-                        variant="outline"
-                        className="text-[10px] text-destructive border-destructive/30"
-                      >
-                        Archived
-                      </Badge>
-                    )}
-                  </div>
-                  {channel.description && (
-                    <p className="mt-0.5 text-xs text-muted-foreground truncate">
-                      {channel.description}
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+                      <Icon
+                        className={`h-4 w-4 ${
+                          isAnnouncement
+                            ? "text-primary"
+                            : "text-muted-foreground"
+                        }`}
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="truncate font-medium text-foreground">
+                          {channel.name}
+                        </span>
+                        <Badge
+                          variant="outline"
+                          className="border-border text-[10px] capitalize text-muted-foreground"
+                        >
+                          {channel.type}
+                        </Badge>
+                        {channel.isArchived && (
+                          <Badge
+                            variant="outline"
+                            className="border-destructive/30 bg-destructive/10 text-[10px] text-destructive"
+                          >
+                            Archived
+                          </Badge>
+                        )}
+                      </div>
+                      {channel.description && (
+                        <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                          {channel.description}
+                        </p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -94,20 +94,13 @@ export function UploadPhotoDialog({ albumId, memberId }: UploadPhotoDialogProps)
 
   return (
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setPreview(null); }}>
-      <DialogTrigger
-        render={
-          <Button
-            size="sm"
-            className="bg-gold text-gold-foreground hover:bg-gold/90"
-          />
-        }
-      >
+      <DialogTrigger render={<Button size="sm" />}>
         <Upload className="mr-2 h-4 w-4" />
         Add Photo
       </DialogTrigger>
       <DialogContent className="border-border bg-card">
         <DialogHeader>
-          <DialogTitle className="font-heading text-xl text-foreground">
+          <DialogTitle className="text-lg font-semibold tracking-tight text-foreground">
             Add Photo
           </DialogTitle>
         </DialogHeader>
@@ -119,7 +112,6 @@ export function UploadPhotoDialog({ albumId, memberId }: UploadPhotoDialogProps)
             variant={mode === "file" ? "default" : "outline"}
             size="sm"
             onClick={() => setMode("file")}
-            className={mode === "file" ? "bg-gold text-gold-foreground hover:bg-gold/90" : ""}
           >
             <ImageIcon className="mr-1.5 h-3.5 w-3.5" />
             Upload File
@@ -129,7 +121,6 @@ export function UploadPhotoDialog({ albumId, memberId }: UploadPhotoDialogProps)
             variant={mode === "url" ? "default" : "outline"}
             size="sm"
             onClick={() => setMode("url")}
-            className={mode === "url" ? "bg-gold text-gold-foreground hover:bg-gold/90" : ""}
           >
             <Link className="mr-1.5 h-3.5 w-3.5" />
             Paste URL
@@ -140,7 +131,7 @@ export function UploadPhotoDialog({ albumId, memberId }: UploadPhotoDialogProps)
           {mode === "file" ? (
             <div className="space-y-2">
               <Label htmlFor="file">
-                Photo <span className="text-crimson">*</span>
+                Photo <span className="text-destructive">*</span>
               </Label>
               <Input
                 ref={fileRef}
@@ -149,27 +140,27 @@ export function UploadPhotoDialog({ albumId, memberId }: UploadPhotoDialogProps)
                 type="file"
                 accept="image/*"
                 onChange={handleFileChange}
-                className="h-11 border-border bg-secondary/30 file:text-foreground file:border-0 file:bg-transparent"
+                className="h-11 file:mr-3 file:text-foreground file:border-0 file:bg-transparent"
               />
               {preview && (
                 <img
                   src={preview}
                   alt="Preview"
-                  className="mt-2 max-h-40 rounded-md object-cover"
+                  className="mt-2 max-h-40 rounded-lg border border-border object-cover"
                 />
               )}
             </div>
           ) : (
             <div className="space-y-2">
               <Label htmlFor="url">
-                Photo URL <span className="text-crimson">*</span>
+                Photo URL <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="url"
                 name="url"
                 type="url"
                 placeholder="https://..."
-                className="h-11 border-border bg-secondary/30"
+                className="h-11"
               />
             </div>
           )}
@@ -181,7 +172,7 @@ export function UploadPhotoDialog({ albumId, memberId }: UploadPhotoDialogProps)
               name="caption"
               placeholder="A few words about this photo..."
               rows={2}
-              className="border-border bg-secondary/30 resize-none"
+              className="resize-none"
             />
           </div>
 
@@ -193,11 +184,7 @@ export function UploadPhotoDialog({ albumId, memberId }: UploadPhotoDialogProps)
             >
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={loading}
-              className="bg-gold text-gold-foreground hover:bg-gold/90"
-            >
+            <Button type="submit" disabled={loading}>
               {loading ? "Uploading..." : "Add Photo"}
             </Button>
           </div>

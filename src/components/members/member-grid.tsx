@@ -23,13 +23,17 @@ export function MemberGrid({ members }: MemberGridProps) {
       {members.map((member) => {
         const online = isOnline(member);
         return (
-          <Link key={member.id} href={`/members/${member.id}`}>
-            <Card className="border-border bg-card transition-colors hover:bg-secondary/30">
+          <Link
+            key={member.id}
+            href={`/members/${member.id}`}
+            className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+          >
+            <Card className="h-full border-border bg-card transition-colors hover:border-foreground/20 hover:bg-secondary/20">
               <CardContent className="flex items-center gap-4 p-4">
-                <div className="relative">
+                <div className="relative shrink-0">
                   <Avatar className="h-12 w-12">
                     <AvatarImage src={member.avatarUrl ?? undefined} />
-                    <AvatarFallback className="bg-gold/10 text-gold">
+                    <AvatarFallback className="bg-secondary text-foreground">
                       {member.displayName.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
@@ -51,7 +55,7 @@ export function MemberGrid({ members }: MemberGridProps) {
                   variant="outline"
                   className={`shrink-0 text-[10px] capitalize ${
                     member.role === "elder"
-                      ? "border-gold/30 text-gold"
+                      ? "border-primary/30 bg-primary/10 text-primary"
                       : "border-border text-muted-foreground"
                   }`}
                 >

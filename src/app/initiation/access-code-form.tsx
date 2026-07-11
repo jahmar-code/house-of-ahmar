@@ -46,18 +46,16 @@ export function AccessCodeForm() {
       </div>
 
       {error && (
-        <p className="text-sm text-destructive text-center">{error}</p>
+        <p role="alert" className="text-center text-sm text-destructive">
+          {error}
+        </p>
       )}
 
-      <Button
-        type="submit"
-        disabled={loading}
-        className="h-12 w-full bg-gold text-gold-foreground hover:bg-gold/90"
-      >
+      <Button type="submit" disabled={loading} className="h-11 w-full">
         {loading ? "Verifying..." : "Present Code"}
       </Button>
 
-      <p className="text-center text-xs text-muted-foreground/60">
+      <p className="text-center text-xs text-muted-foreground">
         Don&apos;t have a code? Ask a family elder.
       </p>
     </form>

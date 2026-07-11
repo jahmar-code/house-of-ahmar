@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { sendMessage } from "@/app/actions/council";
 import { toast } from "sonner";
-import { CornerDownRight, Send, X } from "lucide-react";
+import { CornerDownRight, Loader2, Send, X } from "lucide-react";
 import type { ReplyTarget } from "./council-channel";
 
 interface MessageInputProps {
@@ -65,25 +65,27 @@ export function MessageInput({
   return (
     <div className="border-t border-border pt-4">
       {replyTarget && (
-        <div className="mb-2 flex items-center gap-2 rounded-md border border-border bg-secondary/40 px-3 py-2">
-          <CornerDownRight className="h-3.5 w-3.5 shrink-0 text-gold" />
-          <div className="min-w-0 flex-1 text-xs">
+        <div className="mb-2 flex items-center gap-2 rounded-lg border border-border bg-muted px-3 py-2">
+          <CornerDownRight className="h-3.5 w-3.5 shrink-0 text-primary" />
+          <div className="min-w-0 flex-1 truncate text-xs">
             <span className="text-muted-foreground">Replying to </span>
             <span className="font-medium text-foreground">
               {replyTarget.authorName}
             </span>
-            <span className="ml-2 truncate italic text-muted-foreground/80">
+            <span className="ml-2 italic text-muted-foreground/80">
               {replyTarget.preview}
             </span>
           </div>
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="icon-xs"
             onClick={onClearReply}
-            className="rounded text-muted-foreground hover:text-foreground"
             aria-label="Cancel reply"
+            className="shrink-0 text-muted-foreground hover:text-foreground"
           >
             <X className="h-3.5 w-3.5" />
-          </button>
+          </Button>
         </div>
       )}
 
@@ -99,15 +101,20 @@ export function MessageInput({
               : `Message #${channelName}...`
           }
           rows={1}
-          className="flex-1 resize-none rounded-md border border-border bg-secondary/30 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-gold/30"
+          className="max-h-40 min-h-11 flex-1 resize-none rounded-lg border border-border bg-muted px-3.5 py-2.5 text-base text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 sm:text-sm"
         />
         <Button
           type="submit"
           size="icon"
           disabled={loading || !content.trim()}
-          className="h-10 w-10 bg-gold text-gold-foreground hover:bg-gold/90"
+          aria-label="Send message"
+          className="h-11 w-11 shrink-0"
         >
-          <Send className="h-4 w-4" />
+          {loading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Send className="h-4 w-4" />
+          )}
         </Button>
       </form>
     </div>

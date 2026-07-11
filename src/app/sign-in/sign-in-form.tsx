@@ -11,7 +11,11 @@ import { createClient } from "@/lib/supabase/client";
 export function SignInForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    searchParams.get("error") === "confirmation_failed"
+      ? "That confirmation link is invalid or expired. Sign in or request a new one."
+      : null
+  );
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(formData: FormData) {
@@ -62,20 +66,21 @@ export function SignInForm() {
       </div>
 
       {error && (
-        <p className="text-sm text-destructive text-center">{error}</p>
+        <p role="alert" className="text-center text-sm text-destructive">
+          {error}
+        </p>
       )}
 
-      <Button
-        type="submit"
-        disabled={loading}
-        className="h-12 w-full bg-gold text-gold-foreground hover:bg-gold/90"
-      >
+      <Button type="submit" disabled={loading} className="h-11 w-full">
         {loading ? "Entering..." : "Enter the House"}
       </Button>
 
-      <p className="text-center text-xs text-muted-foreground/60">
+      <p className="text-center text-xs text-muted-foreground">
         No account?{" "}
-        <Link href="/sign-up" className="text-gold hover:underline">
+        <Link
+          href="/sign-up"
+          className="text-primary underline-offset-4 hover:underline"
+        >
           Request entry
         </Link>
       </p>

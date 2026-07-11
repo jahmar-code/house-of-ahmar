@@ -66,7 +66,7 @@ export function FamilyTree({ members, edges, focusMemberId }: FamilyTreeProps) {
     <div
       ref={containerRef}
       dir="rtl"
-      className="rounded-lg border border-border bg-card overflow-auto"
+      className="rounded-xl border border-border bg-card overflow-auto"
     >
       <div
         className="relative"
@@ -74,7 +74,7 @@ export function FamilyTree({ members, edges, focusMemberId }: FamilyTreeProps) {
       >
         {/* Connectors (rendered first so cards sit on top) */}
         <svg
-          className="absolute inset-0 pointer-events-none"
+          className="absolute inset-0 pointer-events-none text-muted-foreground/40"
           width={layout.width}
           height={layout.height}
         >
@@ -99,7 +99,7 @@ export function FamilyTree({ members, edges, focusMemberId }: FamilyTreeProps) {
                 key={`${e.parentId}-${e.childId}-${i}`}
                 d={d}
                 fill="none"
-                stroke="oklch(0.78 0.12 85 / 0.45)"
+                stroke="currentColor"
                 strokeWidth={1.5}
               />
             );
@@ -114,10 +114,10 @@ export function FamilyTree({ members, edges, focusMemberId }: FamilyTreeProps) {
               key={n.member.id}
               href={`/members/${n.member.id}`}
               dir="ltr"
-              className={`absolute flex items-center gap-3 rounded-md border bg-secondary/40 px-3 py-2 transition-all hover:bg-secondary/70 hover:border-gold/40 ${
+              className={`absolute flex items-center gap-3 rounded-lg border bg-secondary/40 px-3 py-2 transition-colors outline-none hover:bg-secondary/70 focus-visible:ring-2 focus-visible:ring-ring/50 ${
                 isFocus
-                  ? "border-gold/50 ring-2 ring-gold/30"
-                  : "border-border"
+                  ? "border-primary/50 ring-2 ring-primary/30"
+                  : "border-border hover:border-foreground/20"
               } ${!n.member.isActive ? "opacity-50" : ""}`}
               style={{
                 left: n.x,
@@ -128,7 +128,7 @@ export function FamilyTree({ members, edges, focusMemberId }: FamilyTreeProps) {
             >
               <Avatar className="h-12 w-12 shrink-0">
                 <AvatarImage src={n.member.avatarUrl ?? undefined} />
-                <AvatarFallback className="bg-gold/10 text-sm text-gold">
+                <AvatarFallback className="bg-secondary text-sm text-foreground">
                   {n.member.displayName.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
@@ -140,7 +140,7 @@ export function FamilyTree({ members, edges, focusMemberId }: FamilyTreeProps) {
                   {n.member.role === "elder" && (
                     <Badge
                       variant="outline"
-                      className="border-gold/30 text-[9px] text-gold leading-none px-1 py-0.5"
+                      className="border-primary/30 bg-primary/10 text-[9px] text-primary leading-none px-1 py-0.5"
                     >
                       elder
                     </Badge>

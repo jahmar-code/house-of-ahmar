@@ -20,6 +20,7 @@ export default async function ManageMembersPage() {
   return (
     <div>
       <PageHeader
+        eyebrow="Elder Council"
         title="Manage Members"
         description="View and manage House members."
       />

@@ -55,23 +55,23 @@ export function PhotoLightbox({ photos }: PhotoLightboxProps) {
 
   return (
     <>
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {photos.map((photo, i) => (
           <Card
             key={photo.id}
-            className="border-border bg-card overflow-hidden group cursor-zoom-in"
+            className="group cursor-zoom-in border-border bg-card overflow-hidden py-0 transition-colors hover:border-foreground/20"
           >
             <button
               type="button"
               onClick={() => setActiveIndex(i)}
-              className="block w-full text-left"
+              className="block w-full text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset"
               aria-label={photo.caption ?? "View photo"}
             >
               <div className="relative aspect-square">
                 <img
                   src={photo.thumbnailUrl ?? photo.url}
                   alt={photo.caption ?? "Family photo"}
-                  className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                  className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
                 />
                 {photo.caption && (
                   <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-3 opacity-0 transition-opacity group-hover:opacity-100">
@@ -94,7 +94,7 @@ export function PhotoLightbox({ photos }: PhotoLightboxProps) {
           <button
             type="button"
             onClick={close}
-            className="absolute right-4 top-4 rounded-full bg-black/40 p-2 text-white/80 transition-colors hover:bg-black/60 hover:text-white"
+            className="absolute right-4 top-4 rounded-full bg-black/40 p-2 text-white/80 outline-none transition-colors hover:bg-black/60 hover:text-white focus-visible:ring-2 focus-visible:ring-ring/70"
             aria-label="Close"
           >
             <X className="h-5 w-5" />
@@ -108,7 +108,7 @@ export function PhotoLightbox({ photos }: PhotoLightboxProps) {
                   e.stopPropagation();
                   prev();
                 }}
-                className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white/80 transition-colors hover:bg-black/60 hover:text-white"
+                className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white/80 outline-none transition-colors hover:bg-black/60 hover:text-white focus-visible:ring-2 focus-visible:ring-ring/70"
                 aria-label="Previous"
               >
                 <ChevronLeft className="h-6 w-6" />
@@ -119,7 +119,7 @@ export function PhotoLightbox({ photos }: PhotoLightboxProps) {
                   e.stopPropagation();
                   next();
                 }}
-                className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white/80 transition-colors hover:bg-black/60 hover:text-white"
+                className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white/80 outline-none transition-colors hover:bg-black/60 hover:text-white focus-visible:ring-2 focus-visible:ring-ring/70"
                 aria-label="Next"
               >
                 <ChevronRight className="h-6 w-6" />
@@ -134,7 +134,7 @@ export function PhotoLightbox({ photos }: PhotoLightboxProps) {
             <img
               src={active.url}
               alt={active.caption ?? "Family photo"}
-              className="max-h-[80vh] max-w-full rounded-md object-contain shadow-2xl"
+              className="max-h-[80vh] max-w-full rounded-xl object-contain shadow-2xl"
             />
             <div className="text-center text-xs text-white/70">
               {active.caption && (

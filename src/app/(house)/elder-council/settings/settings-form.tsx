@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { updateHouseSettings } from "@/app/actions/settings";
 import { toast } from "sonner";
 import type { HouseSettings } from "@/lib/settings";
@@ -32,11 +32,11 @@ export function SettingsForm({ initial }: SettingsFormProps) {
 
   return (
     <Card className="border-border bg-card">
-      <CardContent className="p-6">
-        <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit}>
+        <CardContent className="space-y-6 p-6">
           <div className="space-y-2">
             <Label htmlFor="houseName">
-              House Name <span className="text-crimson">*</span>
+              House Name <span className="text-destructive">*</span>
             </Label>
             <Input
               id="houseName"
@@ -44,7 +44,7 @@ export function SettingsForm({ initial }: SettingsFormProps) {
               defaultValue={initial.houseName}
               required
               maxLength={80}
-              className="h-11 border-border bg-secondary/30"
+              className="h-11 bg-muted/40"
             />
             <p className="text-xs text-muted-foreground">
               Displayed in the sidebar, landing page, and header.
@@ -59,7 +59,7 @@ export function SettingsForm({ initial }: SettingsFormProps) {
               defaultValue={initial.houseTagline}
               rows={2}
               maxLength={280}
-              className="border-border bg-secondary/30 resize-none"
+              className="resize-none bg-muted/40"
             />
             <p className="text-xs text-muted-foreground">
               Shown on the landing page beneath the crest. Newlines preserved.
@@ -74,7 +74,7 @@ export function SettingsForm({ initial }: SettingsFormProps) {
               defaultValue={initial.welcomeMessage}
               rows={2}
               maxLength={500}
-              className="border-border bg-secondary/30 resize-none"
+              className="resize-none bg-muted/40"
             />
             <p className="text-xs text-muted-foreground">
               Greeting shown at the top of The Great Hall.
@@ -89,7 +89,7 @@ export function SettingsForm({ initial }: SettingsFormProps) {
               type="url"
               defaultValue={initial.coverImageUrl}
               placeholder="https://..."
-              className="h-11 border-border bg-secondary/30"
+              className="h-11 bg-muted/40"
             />
             <p className="text-xs text-muted-foreground">
               Optional. Leave blank to use the default crest.
@@ -98,22 +98,18 @@ export function SettingsForm({ initial }: SettingsFormProps) {
               <img
                 src={initial.coverImageUrl}
                 alt="Current cover"
-                className="mt-3 max-h-40 rounded-md border border-border object-cover"
+                className="mt-3 max-h-40 w-full rounded-lg border border-border object-cover"
               />
             )}
           </div>
+        </CardContent>
 
-          <div className="flex justify-end pt-2">
-            <Button
-              type="submit"
-              disabled={loading}
-              className="bg-gold text-gold-foreground hover:bg-gold/90"
-            >
-              {loading ? "Saving..." : "Save Settings"}
-            </Button>
-          </div>
-        </form>
-      </CardContent>
+        <CardFooter className="justify-end">
+          <Button type="submit" disabled={loading}>
+            {loading ? "Saving..." : "Save Settings"}
+          </Button>
+        </CardFooter>
+      </form>
     </Card>
   );
 }

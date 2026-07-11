@@ -19,35 +19,38 @@ export function GatheringCard({ gathering, currentMemberId }: GatheringCardProps
   const myRsvp = gathering.rsvps.find((r) => r.memberId === currentMemberId);
 
   return (
-    <Link href={`/gatherings/${gathering.id}`}>
-      <Card className="border-border bg-card transition-colors hover:bg-secondary/30">
+    <Link
+      href={`/gatherings/${gathering.id}`}
+      className="group block rounded-xl outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/50"
+    >
+      <Card className="p-0 transition-colors group-hover:border-foreground/20">
         <CardContent className="p-4">
           <div className="flex items-start gap-4">
-            {/* Date badge */}
-            <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-md border border-gold/20 bg-gold/5 text-gold">
-              <span className="text-xs font-medium leading-none">
+            {/* Date block */}
+            <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-lg border border-border bg-muted">
+              <span className="text-[11px] font-medium uppercase leading-none tracking-wide text-muted-foreground">
                 {format(new Date(gathering.startsAt), "MMM")}
               </span>
-              <span className="text-xl font-bold leading-none">
+              <span className="mt-1 text-xl font-bold leading-none text-foreground tabular-nums">
                 {format(new Date(gathering.startsAt), "d")}
               </span>
             </div>
 
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <h3 className="font-medium text-foreground truncate">
+                <h3 className="truncate font-semibold text-foreground">
                   {gathering.title}
                 </h3>
                 {myRsvp && (
                   <Badge
                     variant="outline"
-                    className={`text-[10px] ${
+                    className={
                       myRsvp.status === "attending"
                         ? "border-emerald-500/30 text-emerald-400"
                         : myRsvp.status === "maybe"
                           ? "border-amber-500/30 text-amber-400"
                           : "border-border text-muted-foreground"
-                    }`}
+                    }
                   >
                     {myRsvp.status === "attending"
                       ? "Going"
@@ -58,25 +61,25 @@ export function GatheringCard({ gathering, currentMemberId }: GatheringCardProps
                 )}
               </div>
 
-              <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <Calendar className="h-3 w-3" />
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5" />
                   {format(new Date(gathering.startsAt), "EEE, h:mm a")}
                 </span>
                 {gathering.location && (
-                  <span className="flex items-center gap-1 truncate">
-                    <MapPin className="h-3 w-3" />
-                    {gathering.location}
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    <MapPin className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">{gathering.location}</span>
                   </span>
                 )}
-                <span className="flex items-center gap-1">
-                  <Users className="h-3 w-3" />
+                <span className="flex items-center gap-1.5">
+                  <Users className="h-3.5 w-3.5" />
                   {attending.length} attending
                 </span>
               </div>
 
               {gathering.description && (
-                <p className="mt-2 text-xs text-muted-foreground line-clamp-2">
+                <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
                   {gathering.description}
                 </p>
               )}
@@ -85,15 +88,19 @@ export function GatheringCard({ gathering, currentMemberId }: GatheringCardProps
               {attending.length > 0 && (
                 <div className="mt-3 flex -space-x-2">
                   {attending.slice(0, 8).map((rsvp) => (
-                    <Avatar key={rsvp.id} className="h-6 w-6 border-2 border-card">
+                    <Avatar
+                      key={rsvp.id}
+                      size="sm"
+                      className="ring-2 ring-card after:hidden"
+                    >
                       <AvatarImage src={rsvp.member.avatarUrl ?? undefined} />
-                      <AvatarFallback className="bg-gold/10 text-[10px] text-gold">
+                      <AvatarFallback className="text-[10px] font-medium">
                         {rsvp.member.displayName.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
                   ))}
                   {attending.length > 8 && (
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-card bg-secondary text-[10px] text-muted-foreground">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-secondary text-[10px] font-medium text-muted-foreground ring-2 ring-card">
                       +{attending.length - 8}
                     </div>
                   )}

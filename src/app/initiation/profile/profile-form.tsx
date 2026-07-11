@@ -37,7 +37,7 @@ export function ProfileForm() {
     <form action={handleSubmit} className="space-y-5">
       <div className="space-y-2">
         <Label htmlFor="displayName">
-          Display Name <span className="text-crimson">*</span>
+          Display Name <span className="text-destructive">*</span>
         </Label>
         <Input
           id="displayName"
@@ -91,14 +91,12 @@ export function ProfileForm() {
       </div>
 
       {error && (
-        <p className="text-sm text-destructive text-center">{error}</p>
+        <p role="alert" className="text-center text-sm text-destructive">
+          {error}
+        </p>
       )}
 
-      <Button
-        type="submit"
-        disabled={loading}
-        className="h-12 w-full bg-gold text-gold-foreground hover:bg-gold/90"
-      >
+      <Button type="submit" disabled={loading} className="h-11 w-full">
         {loading ? "Entering the House..." : "Complete Initiation"}
       </Button>
     </form>

@@ -40,6 +40,8 @@ export default function RootLayout({
         <TooltipProvider>
           {children}
           <Toaster
+            position="top-center"
+            closeButton
             theme="dark"
             toastOptions={{
               style: {

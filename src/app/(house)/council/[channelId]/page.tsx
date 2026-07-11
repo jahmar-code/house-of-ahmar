@@ -4,7 +4,19 @@ import { channels, messages } from "@/lib/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { getAuthContext } from "@/lib/auth";
 import { CouncilChannel } from "@/components/council/council-channel";
-import { Hash } from "lucide-react";
+import { Hash, Lock, Megaphone } from "lucide-react";
+
+const typeIcons = {
+  general: Hash,
+  announcement: Megaphone,
+  private: Lock,
+};
+
+const typeIconClass = {
+  general: "text-muted-foreground",
+  announcement: "text-primary",
+  private: "text-primary",
+};
 
 export default async function ChannelPage({
   params,
@@ -32,17 +44,21 @@ export default async function ChannelPage({
   // Reverse so oldest are first (chat style)
   const sortedMessages = channelMessages.reverse();
 
+  const Icon = typeIcons[channel.type];
+
   return (
     <div className="flex h-[calc(100vh-8rem)] flex-col lg:h-[calc(100vh-6rem)]">
       {/* Channel header */}
-      <div className="flex items-center gap-2 border-b border-border pb-4">
-        <Hash className="h-5 w-5 text-muted-foreground" />
-        <div>
-          <h1 className="font-heading text-lg font-semibold text-foreground">
+      <div className="flex items-center gap-3 border-b border-border pb-4">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border bg-muted">
+          <Icon className={`h-5 w-5 ${typeIconClass[channel.type]}`} />
+        </div>
+        <div className="min-w-0">
+          <h1 className="truncate text-base font-semibold tracking-tight text-foreground sm:text-lg">
             {channel.name}
           </h1>
           {channel.description && (
-            <p className="text-xs text-muted-foreground">
+            <p className="truncate text-xs text-muted-foreground">
               {channel.description}
             </p>
           )}

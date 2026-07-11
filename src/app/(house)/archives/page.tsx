@@ -38,22 +38,26 @@ export default async function ArchivesPage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {allAlbums.map((album) => (
-            <Link key={album.id} href={`/archives/${album.id}`}>
-              <Card className="border-border bg-card transition-colors hover:bg-secondary/30 overflow-hidden">
+            <Link
+              key={album.id}
+              href={`/archives/${album.id}`}
+              className="block rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            >
+              <Card className="h-full gap-0 border-border bg-card py-0 overflow-hidden transition-colors hover:border-foreground/20">
                 {/* Cover image or placeholder */}
-                <div className="aspect-video bg-secondary/30 flex items-center justify-center">
+                <div className="flex aspect-video items-center justify-center bg-muted">
                   {album.coverPhotoUrl ? (
                     <img
                       src={album.coverPhotoUrl}
                       alt={album.title}
-                      className="h-full w-full object-cover"
+                      className="h-full w-full object-cover transition-transform duration-200 group-hover/card:scale-105"
                     />
                   ) : (
                     <ImageIcon className="h-8 w-8 text-muted-foreground/30" />
                   )}
                 </div>
                 <CardContent className="p-4">
-                  <h3 className="font-medium text-foreground truncate">
+                  <h3 className="truncate font-medium text-foreground">
                     {album.title}
                   </h3>
                   <p className="mt-0.5 text-xs text-muted-foreground">

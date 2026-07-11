@@ -2,6 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getHouseSettings } from "@/lib/settings";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export default async function LandingPage() {
   const supabase = await createClient();
@@ -17,7 +19,7 @@ export default async function LandingPage() {
     <div className="flex min-h-screen flex-col bg-background">
       <main className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center gap-8 px-6 py-16 text-center">
         {/* Monogram */}
-        <div className="flex h-16 w-16 items-center justify-center rounded-full border border-neutral-800">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full border border-border bg-card">
           <span className="text-2xl font-semibold tracking-tight text-foreground">
             {initial}
           </span>
@@ -29,23 +31,29 @@ export default async function LandingPage() {
             {settings.houseName}
           </h1>
           {settings.houseTagline && (
-            <p className="whitespace-pre-line text-[15px] leading-relaxed text-muted-foreground">
+            <p className="whitespace-pre-line text-base leading-relaxed text-muted-foreground">
               {settings.houseTagline}
             </p>
           )}
         </div>
 
         {/* Actions */}
-        <div className="flex w-full flex-col gap-2.5 pt-2 sm:flex-row sm:justify-center">
+        <div className="flex w-full flex-col gap-3 pt-2 sm:flex-row sm:justify-center">
           <Link
             href="/sign-in"
-            className="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-6 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className={cn(
+              buttonVariants({ size: "lg" }),
+              "h-11 w-full sm:w-auto sm:px-8"
+            )}
           >
             Enter the House
           </Link>
           <Link
             href="/sign-up"
-            className="inline-flex h-10 items-center justify-center rounded-lg border border-neutral-800 px-6 text-sm font-medium text-neutral-400 transition-colors hover:border-neutral-700 hover:text-foreground"
+            className={cn(
+              buttonVariants({ variant: "outline", size: "lg" }),
+              "h-11 w-full sm:w-auto sm:px-8"
+            )}
           >
             Request Entry
           </Link>
@@ -54,7 +62,9 @@ export default async function LandingPage() {
 
       {/* Footer mark */}
       <footer className="pb-8 text-center">
-        <p className="text-xs tracking-wide text-neutral-600">Est. Ahmar</p>
+        <p className="text-xs tracking-wide text-muted-foreground/70">
+          Est. Ahmar
+        </p>
       </footer>
     </div>
   );

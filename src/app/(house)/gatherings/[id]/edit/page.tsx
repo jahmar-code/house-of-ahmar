@@ -25,7 +25,7 @@ export default async function EditGatheringPage({
 
   return (
     <div className="mx-auto max-w-2xl">
-      <PageHeader title="Edit Gathering" description={gathering.title} />
+      <PageHeader title="Edit Gathering" eyebrow="Gatherings" description={gathering.title} />
       <GatheringForm
         initial={{
           id: gathering.id,

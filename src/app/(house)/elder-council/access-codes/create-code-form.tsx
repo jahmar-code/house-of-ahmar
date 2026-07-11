@@ -39,7 +39,7 @@ export function CreateCodeForm() {
               id="label"
               name="label"
               placeholder="For Uncle Karim..."
-              className="h-9 w-48 border-border bg-secondary/30 text-sm"
+              className="h-9 w-48 bg-muted/40 text-sm"
             />
           </div>
           <div className="space-y-1.5">
@@ -52,17 +52,12 @@ export function CreateCodeForm() {
               type="number"
               min={1}
               defaultValue={1}
-              className="h-9 w-20 border-border bg-secondary/30 text-sm"
+              className="h-9 w-20 bg-muted/40 text-sm"
             />
           </div>
-          <Button
-            type="submit"
-            size="sm"
-            disabled={loading}
-            className="h-9 bg-gold text-gold-foreground hover:bg-gold/90"
-          >
+          <Button type="submit" disabled={loading}>
             <Plus className="mr-1.5 h-3.5 w-3.5" />
-            Create Code
+            {loading ? "Creating..." : "Create Code"}
           </Button>
         </form>
       </CardContent>

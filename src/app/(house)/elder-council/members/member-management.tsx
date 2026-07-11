@@ -55,26 +55,26 @@ export function MemberManagement({ members }: MemberManagementProps) {
       {members.map((member) => (
         <Card
           key={member.id}
-          className={`border-border bg-card ${!member.isActive ? "opacity-60" : ""}`}
+          className={`border-border bg-card transition-colors hover:border-foreground/20 ${!member.isActive ? "opacity-60" : ""}`}
         >
-          <CardContent className="flex items-center justify-between p-4">
-            <div className="flex items-center gap-3">
+          <CardContent className="flex items-center justify-between gap-3 p-4">
+            <div className="flex min-w-0 items-center gap-3">
               <Avatar className="h-10 w-10">
                 <AvatarImage src={member.avatarUrl ?? undefined} />
-                <AvatarFallback className="bg-gold/10 text-sm text-gold">
+                <AvatarFallback className="bg-secondary text-sm text-foreground">
                   {member.displayName.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <div>
+              <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium text-foreground">
+                  <span className="truncate font-medium text-foreground">
                     {member.displayName}
                   </span>
                   <Badge
                     variant="outline"
-                    className={`text-[10px] capitalize ${
+                    className={`shrink-0 text-[10px] capitalize ${
                       member.role === "elder"
-                        ? "border-gold/30 text-gold"
+                        ? "border-primary/30 bg-primary/10 text-primary"
                         : "border-border text-muted-foreground"
                     }`}
                   >
@@ -83,19 +83,28 @@ export function MemberManagement({ members }: MemberManagementProps) {
                   {!member.isActive && (
                     <Badge
                       variant="outline"
-                      className="text-[10px] text-destructive border-destructive/30"
+                      className="shrink-0 border-destructive/30 bg-destructive/10 text-[10px] text-destructive"
                     >
                       Inactive
                     </Badge>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground">{member.email}</p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {member.email}
+                </p>
               </div>
             </div>
 
             <DropdownMenu>
               <DropdownMenuTrigger
-                render={<Button variant="ghost" size="icon" className="h-8 w-8" />}
+                render={
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Actions for ${member.displayName}`}
+                    className="h-8 w-8 shrink-0"
+                  />
+                }
               >
                 <MoreVertical className="h-4 w-4" />
               </DropdownMenuTrigger>

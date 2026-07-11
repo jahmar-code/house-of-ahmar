@@ -13,10 +13,12 @@ export default async function ProfilePage() {
     <div className="flex min-h-screen items-center justify-center bg-background">
       <div className="w-full max-w-md space-y-8 px-6">
         <div className="text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-gold/30 bg-card">
-            <span className="font-heading text-2xl font-bold text-gold">A</span>
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full border border-border bg-card">
+            <span className="text-2xl font-semibold tracking-tight text-foreground">
+              A
+            </span>
           </div>
-          <h1 className="font-heading text-3xl font-bold text-foreground">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">
             Your Identity
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">

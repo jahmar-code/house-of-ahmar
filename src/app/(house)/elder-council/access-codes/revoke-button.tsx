@@ -24,6 +24,7 @@ export function RevokeButton({ codeId }: { codeId: string }) {
       size="icon"
       disabled={loading}
       onClick={handleClick}
+      aria-label="Revoke access code"
       className="h-8 w-8 text-muted-foreground hover:text-destructive"
     >
       <X className="h-4 w-4" />

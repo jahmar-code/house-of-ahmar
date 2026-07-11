@@ -34,12 +34,10 @@ export default async function GatheringsPage() {
       <PageHeader title="Gatherings" description="Family events and meetups.">
         {ctx?.role === "elder" && <ArchivePastButton />}
         {ctx?.role !== "guest" && (
-          <Link href="/gatherings/new">
-            <Button size="sm" className="bg-gold text-gold-foreground hover:bg-gold/90">
-              <Plus className="mr-2 h-4 w-4" />
-              New Gathering
-            </Button>
-          </Link>
+          <Button render={<Link href="/gatherings/new" />}>
+            <Plus className="h-4 w-4" />
+            New Gathering
+          </Button>
         )}
       </PageHeader>
 
@@ -48,13 +46,23 @@ export default async function GatheringsPage() {
           icon={Calendar}
           title="No gatherings yet"
           description="Plan a gathering to bring the family together."
-        />
+        >
+          {ctx?.role !== "guest" && (
+            <Button render={<Link href="/gatherings/new" />}>
+              <Plus className="h-4 w-4" />
+              New Gathering
+            </Button>
+          )}
+        </EmptyState>
       ) : (
         <div className="space-y-8">
           {upcoming.length > 0 && (
             <section>
-              <h2 className="mb-4 font-heading text-lg font-semibold text-foreground">
+              <h2 className="mb-4 flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Upcoming
+                <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-muted-foreground">
+                  {upcoming.length}
+                </span>
               </h2>
               <div className="space-y-4">
                 {upcoming.map((g) => (
@@ -70,8 +78,11 @@ export default async function GatheringsPage() {
 
           {past.length > 0 && (
             <section>
-              <h2 className="mb-4 font-heading text-lg font-semibold text-muted-foreground">
+              <h2 className="mb-4 flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Past
+                <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-muted-foreground">
+                  {past.length}
+                </span>
               </h2>
               <div className="space-y-4 opacity-60">
                 {past.map((g) => (

@@ -75,12 +75,12 @@ export function GatheringForm({ initial }: GatheringFormProps) {
   }
 
   return (
-    <Card className="border-border bg-card">
-      <CardContent className="p-6">
+    <Card>
+      <CardContent className="p-5 sm:p-6">
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-2">
             <Label htmlFor="title">
-              Title <span className="text-crimson">*</span>
+              Title <span className="text-destructive">*</span>
             </Label>
             <Input
               id="title"
@@ -88,7 +88,7 @@ export function GatheringForm({ initial }: GatheringFormProps) {
               defaultValue={initial?.title}
               placeholder="Family Dinner, Eid Celebration..."
               required
-              className="h-11 border-border bg-secondary/30"
+              className="h-11"
             />
           </div>
 
@@ -100,7 +100,7 @@ export function GatheringForm({ initial }: GatheringFormProps) {
               defaultValue={initial?.description ?? ""}
               placeholder="What's the occasion?"
               rows={3}
-              className="border-border bg-secondary/30 resize-none"
+              className="resize-none"
             />
           </div>
 
@@ -111,14 +111,14 @@ export function GatheringForm({ initial }: GatheringFormProps) {
               name="location"
               defaultValue={initial?.location ?? ""}
               placeholder="Uncle's house, Park, etc."
-              className="h-11 border-border bg-secondary/30"
+              className="h-11"
             />
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="startsAt">
-                Start <span className="text-crimson">*</span>
+                Start <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="startsAt"
@@ -126,7 +126,7 @@ export function GatheringForm({ initial }: GatheringFormProps) {
                 type="datetime-local"
                 defaultValue={toLocalInputValue(initial?.startsAt ?? null)}
                 required
-                className="h-11 border-border bg-secondary/30"
+                className="h-11 [color-scheme:dark]"
               />
             </div>
             <div className="space-y-2">
@@ -136,23 +136,24 @@ export function GatheringForm({ initial }: GatheringFormProps) {
                 name="endsAt"
                 type="datetime-local"
                 defaultValue={toLocalInputValue(initial?.endsAt ?? null)}
-                className="h-11 border-border bg-secondary/30"
+                className="h-11 [color-scheme:dark]"
               />
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-2">
+          <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:justify-end sm:gap-3">
             <Button
               type="button"
               variant="outline"
               onClick={() => router.back()}
+              className="h-11 w-full sm:h-9 sm:w-auto"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={loading}
-              className="bg-gold text-gold-foreground hover:bg-gold/90"
+              className="h-11 w-full sm:h-9 sm:w-auto"
             >
               {loading
                 ? editing

@@ -12,13 +12,13 @@ export function RecentPosts({ posts }: RecentPostsProps) {
   return (
     <Card className="border-border bg-card">
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="font-heading text-lg">
+        <div className="flex items-center justify-between gap-3">
+          <CardTitle className="text-base font-semibold tracking-tight text-foreground">
             Recent on The Wall
           </CardTitle>
           <Link
             href="/feed"
-            className="text-xs text-gold hover:text-gold/80"
+            className="rounded-lg px-1 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
           >
             View all
           </Link>
@@ -30,16 +30,16 @@ export function RecentPosts({ posts }: RecentPostsProps) {
             The Wall is empty. Be the first to post.
           </p>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {posts.map((post) => (
               <Link
                 key={post.id}
                 href="/feed"
-                className="flex items-start gap-3 rounded-md border border-border bg-secondary/20 p-3 transition-colors hover:bg-secondary/40"
+                className="flex items-start gap-3 rounded-lg border border-border bg-secondary/20 p-3 transition-colors hover:border-foreground/20 hover:bg-secondary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
               >
                 <Avatar className="h-8 w-8">
                   <AvatarImage src={post.author.avatarUrl ?? undefined} />
-                  <AvatarFallback className="bg-gold/10 text-xs text-gold">
+                  <AvatarFallback className="bg-secondary text-xs text-foreground">
                     {post.author.displayName.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>

@@ -77,6 +77,7 @@ export default async function AuditLogPage() {
   return (
     <div>
       <PageHeader
+        eyebrow="Elder Council"
         title="Audit Log"
         description="The last 200 administrative actions in the House."
       />
@@ -94,11 +95,14 @@ export default async function AuditLogPage() {
             const summary = summarizeMetadata(entry.action, entry.metadata);
             const date = new Date(entry.createdAt);
             return (
-              <Card key={entry.id} className="border-border bg-card">
+              <Card
+                key={entry.id}
+                className="border-border bg-card transition-colors hover:border-foreground/20"
+              >
                 <CardContent className="flex items-start gap-3 p-4">
-                  <Avatar className="h-8 w-8 mt-0.5">
+                  <Avatar className="mt-0.5 h-8 w-8">
                     <AvatarImage src={entry.actor.avatarUrl ?? undefined} />
-                    <AvatarFallback className="bg-gold/10 text-xs text-gold">
+                    <AvatarFallback className="bg-secondary text-xs text-foreground">
                       {entry.actor.displayName.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>

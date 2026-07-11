@@ -96,36 +96,40 @@ export function PostForm({ memberId, role }: PostFormProps) {
 
   return (
     <Card
-      className={`border-border bg-card ${
-        mode === "announcement" && isElder ? "ring-1 ring-gold/30" : ""
-      }`}
+      className={
+        mode === "announcement" && isElder
+          ? "border-primary/20 ring-1 ring-primary/30"
+          : ""
+      }
     >
-      <CardContent className="p-4">
+      <CardContent className="p-4 sm:p-5">
         <form onSubmit={handleSubmit} className="space-y-3">
           {isElder && (
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={() => setMode("text")}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition-colors ${
+                aria-pressed={mode === "text"}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 ${
                   mode === "text"
-                    ? "border-gold/40 bg-gold/10 text-foreground"
-                    : "border-border text-muted-foreground hover:border-gold/20"
+                    ? "border-primary/40 bg-primary/10 text-foreground"
+                    : "border-border text-muted-foreground hover:border-foreground/20 hover:text-foreground"
                 }`}
               >
-                <Scroll className="h-3 w-3" />
+                <Scroll className="h-3.5 w-3.5" />
                 Post
               </button>
               <button
                 type="button"
                 onClick={() => setMode("announcement")}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition-colors ${
+                aria-pressed={mode === "announcement"}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 ${
                   mode === "announcement"
-                    ? "border-gold/40 bg-gold/10 text-foreground"
-                    : "border-border text-muted-foreground hover:border-gold/20"
+                    ? "border-primary/40 bg-primary/10 text-foreground"
+                    : "border-border text-muted-foreground hover:border-foreground/20 hover:text-foreground"
                 }`}
               >
-                <Megaphone className="h-3 w-3" />
+                <Megaphone className="h-3.5 w-3.5" />
                 Announcement
               </button>
             </div>
@@ -140,7 +144,7 @@ export function PostForm({ memberId, role }: PostFormProps) {
                 : "Write on The Wall..."
             }
             rows={3}
-            className="border-border bg-secondary/30 resize-none"
+            className="resize-none bg-muted/40"
           />
 
           {/* Image previews */}
@@ -151,12 +155,13 @@ export function PostForm({ memberId, role }: PostFormProps) {
                   <img
                     src={src}
                     alt=""
-                    className="h-20 w-20 rounded-md object-cover"
+                    className="h-20 w-20 rounded-lg border border-border object-cover"
                   />
                   <button
                     type="button"
                     onClick={() => removeFile(i)}
-                    className="absolute -right-1.5 -top-1.5 rounded-full bg-destructive p-0.5 text-white"
+                    aria-label="Remove image"
+                    className="absolute -right-2 -top-2 rounded-full border border-border bg-background p-1 text-muted-foreground transition-colors hover:border-destructive/40 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -180,7 +185,7 @@ export function PostForm({ memberId, role }: PostFormProps) {
                 variant="ghost"
                 size="sm"
                 onClick={() => fileRef.current?.click()}
-                className="text-muted-foreground hover:text-gold"
+                className="text-muted-foreground hover:text-foreground"
               >
                 <ImagePlus className="mr-1.5 h-4 w-4" />
                 Photo
@@ -189,8 +194,7 @@ export function PostForm({ memberId, role }: PostFormProps) {
             <Button
               type="submit"
               disabled={loading || (!content.trim() && files.length === 0)}
-              size="sm"
-              className="bg-gold text-gold-foreground hover:bg-gold/90"
+              className="min-w-[6.5rem]"
             >
               <Send className="mr-2 h-4 w-4" />
               {loading

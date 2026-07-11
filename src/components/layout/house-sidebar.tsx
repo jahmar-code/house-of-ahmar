@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { Shield, LogOut } from "lucide-react";
+import { Shield, LogOut, ChevronsUpDown } from "lucide-react";
 import { NAV_ITEMS, isNavActive } from "./nav-items";
 
 interface HouseSidebarProps {
@@ -43,11 +43,14 @@ export function HouseSidebar({ role, displayName, avatarUrl, houseName }: HouseS
     <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 border-r border-sidebar-border bg-sidebar">
       <div className="flex h-full flex-col gap-y-5 px-4 py-6">
         {/* Logo */}
-        <Link href="/dashboard" className="flex items-center gap-3 px-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full border border-gold/30 bg-card">
-            <span className="font-heading text-lg font-bold text-gold">A</span>
-          </div>
-          <span className="font-heading text-lg font-semibold text-sidebar-foreground">
+        <Link
+          href="/dashboard"
+          className="group flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+        >
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-lg font-bold text-primary-foreground">
+            A
+          </span>
+          <span className="truncate text-lg font-semibold tracking-tight text-sidebar-foreground">
             {houseName}
           </span>
         </Link>
@@ -61,10 +64,10 @@ export function HouseSidebar({ role, displayName, avatarUrl, houseName }: HouseS
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
                   isActive
                     ? "bg-sidebar-accent text-sidebar-primary"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
                 )}
               >
                 <item.icon className="h-4 w-4" />
@@ -80,13 +83,13 @@ export function HouseSidebar({ role, displayName, avatarUrl, houseName }: HouseS
               <Link
                 href="/elder-council"
                 className={cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
                   pathname.startsWith("/elder-council")
-                    ? "bg-sidebar-accent text-gold"
-                    : "text-gold/60 hover:bg-sidebar-accent/50 hover:text-gold"
+                    ? "bg-sidebar-accent text-sidebar-primary"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
                 )}
               >
-                <Shield className="h-4 w-4" />
+                <Shield className="h-4 w-4 text-primary" />
                 Elder Council
               </Link>
             </>
@@ -99,7 +102,7 @@ export function HouseSidebar({ role, displayName, avatarUrl, houseName }: HouseS
             render={
               <button
                 type="button"
-                className="flex w-full items-center gap-3 rounded-md border border-sidebar-border bg-sidebar-accent/30 px-3 py-2.5 text-left transition-colors hover:bg-sidebar-accent/50"
+                className="group flex w-full items-center gap-3 rounded-lg border border-sidebar-border bg-sidebar-accent/40 px-3 py-2.5 text-left transition-colors hover:border-foreground/20 hover:bg-sidebar-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
               />
             }
           >
@@ -107,14 +110,15 @@ export function HouseSidebar({ role, displayName, avatarUrl, houseName }: HouseS
               {avatarUrl && <AvatarImage src={avatarUrl} alt={displayName} />}
               <AvatarFallback>{initials}</AvatarFallback>
             </Avatar>
-            <div className="flex-1 min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-sidebar-foreground">
                 {displayName}
               </p>
-              <p className="text-xs capitalize text-sidebar-foreground/50">
+              <p className="text-xs capitalize text-muted-foreground">
                 {role}
               </p>
             </div>
+            <ChevronsUpDown className="h-4 w-4 shrink-0 text-muted-foreground" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
             <DropdownMenuItem onClick={handleSignOut}>

@@ -27,7 +27,7 @@ export function UpcomingBirthdays({ members }: UpcomingBirthdaysProps) {
   return (
     <Card className="border-border bg-card">
       <CardHeader className="pb-3">
-        <CardTitle className="font-heading text-lg">
+        <CardTitle className="text-base font-semibold tracking-tight text-foreground">
           Upcoming Birthdays
         </CardTitle>
       </CardHeader>
@@ -37,27 +37,31 @@ export function UpcomingBirthdays({ members }: UpcomingBirthdaysProps) {
             No birthdays on record.
           </p>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {upcoming.map(({ member, nextBirthday, daysUntil }) => (
               <div
                 key={member.id}
-                className="flex items-center gap-3 rounded-md border border-border bg-secondary/20 p-3"
+                className="flex items-center gap-3 rounded-lg border border-border bg-secondary/20 p-3"
               >
                 <Avatar className="h-8 w-8">
                   <AvatarImage src={member.avatarUrl ?? undefined} />
-                  <AvatarFallback className="bg-gold/10 text-xs text-gold">
+                  <AvatarFallback className="bg-secondary text-xs text-foreground">
                     {member.displayName.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-foreground">
                     {member.displayName}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {format(nextBirthday, "MMM d")}
                   </p>
                 </div>
-                <span className="text-xs font-medium text-gold">
+                <span
+                  className={`shrink-0 text-xs font-medium ${
+                    daysUntil <= 1 ? "text-primary" : "text-muted-foreground"
+                  }`}
+                >
                   {daysUntil === 0
                     ? "Today!"
                     : daysUntil === 1

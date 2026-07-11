@@ -16,6 +16,7 @@ export default async function HouseSettingsPage() {
   return (
     <div className="mx-auto max-w-2xl">
       <PageHeader
+        eyebrow="Elder Council"
         title="House Settings"
         description="Configure how the House of Ahmar appears to your family."
       />

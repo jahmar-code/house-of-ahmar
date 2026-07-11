@@ -17,19 +17,22 @@ const statuses = [
     value: "attending" as const,
     label: "Attending",
     icon: Check,
-    activeClass: "bg-emerald-500/20 border-emerald-500/40 text-emerald-400",
+    activeClass:
+      "border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/15",
   },
   {
     value: "maybe" as const,
     label: "Maybe",
     icon: HelpCircle,
-    activeClass: "bg-amber-500/20 border-amber-500/40 text-amber-400",
+    activeClass:
+      "border-amber-500/40 bg-amber-500/10 text-amber-400 hover:bg-amber-500/15",
   },
   {
     value: "not_attending" as const,
     label: "Can't make it",
     icon: X,
-    activeClass: "bg-red-500/20 border-red-500/40 text-red-400",
+    activeClass:
+      "border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/15",
   },
 ];
 
@@ -50,24 +53,25 @@ export function RsvpButton({ gatheringId, currentStatus }: RsvpButtonProps) {
   }
 
   return (
-    <div className="flex flex-wrap gap-2">
-      {statuses.map(({ value, label, icon: Icon, activeClass }) => (
-        <Button
-          key={value}
-          variant="outline"
-          size="sm"
-          disabled={loading}
-          onClick={() => handleRsvp(value)}
-          className={`${
-            currentStatus === value
-              ? activeClass
-              : "border-border text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <Icon className="mr-1.5 h-3.5 w-3.5" />
-          {label}
-        </Button>
-      ))}
+    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+      {statuses.map(({ value, label, icon: Icon, activeClass }) => {
+        const active = currentStatus === value;
+        return (
+          <Button
+            key={value}
+            variant="outline"
+            aria-pressed={active}
+            disabled={loading}
+            onClick={() => handleRsvp(value)}
+            className={`h-11 min-w-0 ${
+              active ? activeClass : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Icon className="h-4 w-4 shrink-0" />
+            <span className="truncate">{label}</span>
+          </Button>
+        );
+      })}
     </div>
   );
 }

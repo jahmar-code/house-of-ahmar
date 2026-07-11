@@ -11,12 +11,12 @@ interface StatsCardProps {
 export function StatsCard({ icon: Icon, label, value, sublabel }: StatsCardProps) {
   return (
     <Card className="border-border bg-card">
-      <CardContent className="flex items-center gap-4 p-4">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-gold/20 bg-gold/5">
-          <Icon className="h-5 w-5 text-gold" />
+      <CardContent className="flex items-center gap-4 p-4 sm:p-5">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/10">
+          <Icon className="h-5 w-5 text-primary" />
         </div>
-        <div>
-          <p className="text-2xl font-bold text-foreground">
+        <div className="min-w-0">
+          <p className="text-2xl font-bold tracking-tight text-foreground">
             {value}
             {sublabel && (
               <span className="ml-1 text-sm font-normal text-muted-foreground">
@@ -24,7 +24,9 @@ export function StatsCard({ icon: Icon, label, value, sublabel }: StatsCardProps
               </span>
             )}
           </p>
-          <p className="text-xs text-muted-foreground">{label}</p>
+          <p className="truncate text-xs font-medium text-muted-foreground">
+            {label}
+          </p>
         </div>
       </CardContent>
     </Card>

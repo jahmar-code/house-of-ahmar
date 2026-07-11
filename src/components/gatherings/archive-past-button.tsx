@@ -37,12 +37,11 @@ export function ArchivePastButton() {
   return (
     <Button
       variant="outline"
-      size="sm"
       onClick={handleClick}
       disabled={pending || busy}
-      className="border-border text-muted-foreground hover:text-foreground"
+      className="text-muted-foreground hover:text-foreground"
     >
-      <Archive className="mr-2 h-4 w-4" />
+      <Archive className="h-4 w-4" />
       Archive past
     </Button>
   );

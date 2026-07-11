@@ -57,7 +57,7 @@ export default async function MemberProfilePage({
             <div className="relative">
               <Avatar className="h-24 w-24">
                 <AvatarImage src={member.avatarUrl ?? undefined} />
-                <AvatarFallback className="bg-gold/10 text-2xl text-gold">
+                <AvatarFallback className="bg-secondary text-2xl text-foreground">
                   {member.displayName.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
@@ -66,7 +66,7 @@ export default async function MemberProfilePage({
               )}
             </div>
 
-            <h1 className="mt-4 font-heading text-2xl font-bold text-foreground">
+            <h1 className="mt-4 text-2xl font-bold tracking-tight text-foreground">
               {member.displayName}
             </h1>
             {member.fullName && member.fullName !== member.displayName && (
@@ -77,7 +77,7 @@ export default async function MemberProfilePage({
               variant="outline"
               className={`mt-2 capitalize ${
                 member.role === "elder"
-                  ? "border-gold/30 text-gold"
+                  ? "border-primary/30 bg-primary/10 text-primary"
                   : "border-border text-muted-foreground"
               }`}
             >
@@ -126,8 +126,8 @@ export default async function MemberProfilePage({
         <CardContent className="p-6 space-y-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-gold" />
-              <h2 className="font-heading text-lg text-foreground">
+              <Users className="h-4 w-4 text-primary" />
+              <h2 className="text-base font-semibold tracking-tight text-foreground">
                 Family
               </h2>
             </div>
@@ -200,20 +200,20 @@ function RelationshipList({
           {people.map(({ edge, other }) => (
             <li
               key={`${edge.parentId}-${edge.childId}`}
-              className="flex items-center justify-between rounded-md border border-border bg-secondary/30 px-3 py-2"
+              className="flex items-center justify-between gap-2 rounded-lg border border-border bg-secondary/20 px-3 py-2"
             >
               {other ? (
                 <Link
                   href={`/members/${other.id}`}
-                  className="flex items-center gap-2 text-sm text-foreground hover:text-gold"
+                  className="flex min-w-0 items-center gap-2 rounded-lg text-sm text-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
                 >
                   <Avatar className="h-7 w-7">
                     <AvatarImage src={other.avatarUrl ?? undefined} />
-                    <AvatarFallback className="bg-gold/10 text-xs text-gold">
+                    <AvatarFallback className="bg-secondary text-xs text-foreground">
                       {other.displayName.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <span>{other.displayName}</span>
+                  <span className="truncate">{other.displayName}</span>
                 </Link>
               ) : (
                 <span className="text-sm text-muted-foreground italic">

@@ -40,20 +40,13 @@ export function CreateAlbumDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          <Button
-            size="sm"
-            className="bg-gold text-gold-foreground hover:bg-gold/90"
-          />
-        }
-      >
+      <DialogTrigger render={<Button size="sm" />}>
         <Plus className="mr-2 h-4 w-4" />
         New Album
       </DialogTrigger>
       <DialogContent className="border-border bg-card">
         <DialogHeader>
-          <DialogTitle className="font-heading text-xl text-foreground">
+          <DialogTitle className="text-lg font-semibold tracking-tight text-foreground">
             Create Album
           </DialogTitle>
         </DialogHeader>
@@ -61,14 +54,14 @@ export function CreateAlbumDialog() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="title">
-              Title <span className="text-crimson">*</span>
+              Title <span className="text-destructive">*</span>
             </Label>
             <Input
               id="title"
               name="title"
               placeholder="Summer 2024, Eid Family Day..."
               required
-              className="h-11 border-border bg-secondary/30"
+              className="h-11"
             />
           </div>
 
@@ -79,7 +72,7 @@ export function CreateAlbumDialog() {
               name="description"
               placeholder="What's in this album?"
               rows={3}
-              className="border-border bg-secondary/30 resize-none"
+              className="resize-none"
             />
           </div>
 
@@ -91,11 +84,7 @@ export function CreateAlbumDialog() {
             >
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={loading}
-              className="bg-gold text-gold-foreground hover:bg-gold/90"
-            >
+            <Button type="submit" disabled={loading}>
               {loading ? "Creating..." : "Create"}
             </Button>
           </div>

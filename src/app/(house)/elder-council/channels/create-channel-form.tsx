@@ -43,7 +43,7 @@ export function CreateChannelForm() {
                 name="name"
                 placeholder="Kitchen Talk, Recipes..."
                 required
-                className="h-10 border-border bg-secondary/30 text-sm"
+                className="h-10 bg-muted/40 text-sm"
               />
             </div>
             <div className="space-y-1.5">
@@ -54,7 +54,7 @@ export function CreateChannelForm() {
                 id="type"
                 name="type"
                 defaultValue="general"
-                className="h-10 rounded-md border border-border bg-secondary/30 px-3 text-sm text-foreground outline-none focus:border-gold/30"
+                className="h-10 rounded-lg border border-input bg-muted/40 px-3 text-sm text-foreground transition-colors outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50"
               >
                 <option value="general">General</option>
                 <option value="announcement">Announcement</option>
@@ -72,17 +72,12 @@ export function CreateChannelForm() {
               name="description"
               rows={2}
               placeholder="What's this chamber for?"
-              className="border-border bg-secondary/30 resize-none text-sm"
+              className="resize-none bg-muted/40 text-sm"
             />
           </div>
 
           <div className="flex justify-end">
-            <Button
-              type="submit"
-              size="sm"
-              disabled={loading}
-              className="bg-gold text-gold-foreground hover:bg-gold/90"
-            >
+            <Button type="submit" disabled={loading}>
               <Plus className="mr-1.5 h-3.5 w-3.5" />
               {loading ? "Creating..." : "Create Chamber"}
             </Button>
