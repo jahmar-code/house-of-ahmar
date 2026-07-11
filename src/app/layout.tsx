@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,12 +18,47 @@ const geistMono = Geist_Mono({
 // `--font-serif` is intentionally aliased to Inter so the legacy
 // `font-heading` utility still resolves to a real font without pulling in a
 // separate serif family.
+// Absolute origin for OG/Twitter image URLs + auth email links. Set
+// NEXT_PUBLIC_SITE_URL in production; the browser origin is used locally.
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
 export const metadata: Metadata = {
-  title: "House of Ahmar",
-  description: "The gates are closed. Only blood enters.",
-  icons: {
-    icon: "/favicon.ico",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "House of Ahmar",
+    template: "%s · House of Ahmar",
   },
+  description:
+    "A private home for the House of Ahmar — our people, our gatherings, our story. By initiation only.",
+  applicationName: "House of Ahmar",
+  appleWebApp: {
+    capable: true,
+    title: "House of Ahmar",
+    statusBarStyle: "black-translucent",
+  },
+  openGraph: {
+    type: "website",
+    siteName: "House of Ahmar",
+    title: "House of Ahmar",
+    description: "A private home for our family. By initiation only.",
+    url: "/",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "House of Ahmar",
+    description: "A private home for our family. By initiation only.",
+  },
+  // Private space — keep it out of search engines entirely.
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: { index: false, follow: false },
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0a0a0a",
+  colorScheme: "dark",
 };
 
 export default function RootLayout({
