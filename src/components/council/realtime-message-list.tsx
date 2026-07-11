@@ -74,15 +74,18 @@ export function RealtimeMessageList({
             updated_at: string;
           };
 
-          // Fetch the author for this message
+          // Fetch ONLY the author fields a message renders. The members table
+          // is otherwise locked from the client Data API (RLS + column grant),
+          // so PII (email/phone/bio/birthday) is never sent to the browser.
           const { data: author } = await supabase
             .from("members")
-            .select("*")
+            .select("id, display_name, avatar_url, role")
             .eq("id", newRow.author_id)
             .single();
 
           if (!author) return;
 
+          const now = new Date();
           const newMessage: MessageWithAuthor = {
             id: newRow.id,
             channelId: newRow.channel_id,
@@ -94,20 +97,22 @@ export function RealtimeMessageList({
             createdAt: new Date(newRow.created_at),
             updatedAt: new Date(newRow.updated_at),
             author: {
+              // Only these are rendered for a message author; the rest are
+              // intentionally not fetched (kept null) to avoid leaking PII.
               id: author.id,
-              authUserId: author.auth_user_id,
               displayName: author.display_name,
-              fullName: author.full_name,
-              email: author.email,
-              phone: author.phone,
               avatarUrl: author.avatar_url,
-              bio: author.bio,
-              birthday: author.birthday,
               role: author.role,
-              isActive: author.is_active,
-              lastSeenAt: author.last_seen_at ? new Date(author.last_seen_at) : null,
-              createdAt: new Date(author.created_at),
-              updatedAt: new Date(author.updated_at),
+              authUserId: "",
+              fullName: null,
+              email: null,
+              phone: null,
+              bio: null,
+              birthday: null,
+              isActive: true,
+              lastSeenAt: null,
+              createdAt: now,
+              updatedAt: now,
             },
           };
 

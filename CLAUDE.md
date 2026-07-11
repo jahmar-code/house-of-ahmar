@@ -37,10 +37,13 @@ the whole game in a private space. Every mutation is a **Server Action** in
 `src/app/actions/` that: gates auth first (`requireAuth` / `requireRole("elder")`,
 which *throw*), validates with Zod (`validators.ts`), scopes to the caller via
 `getAuthContext()`, mutates through Drizzle, and returns an `ActionResult`. Roles
-are `elder > member > guest`. **Role gating is application-level** — the server DB
-connection uses `DATABASE_URL` and bypasses RLS on purpose; only `messages` and
-`channels` have RLS (for Realtime). Never rely on the database to enforce
-permissions on any other table.
+are `elder > member > guest`. **Two layers of authz, keep both:** (a) role/ownership
+gating in every server action/page (`requireRole` / owner-or-elder) — the app's
+`DATABASE_URL` owner role bypasses RLS, so the app is unaffected by it; (b) the
+Supabase **Data API is locked** (migration `0002`): every table has RLS enabled
+deny-by-default and client grants are revoked, so the browser's publishable key
+can't read/write tables directly. The ONLY client Data-API reads are message-author
+name/avatar/role and Council `messages` (private chambers elder-only).
 
 **As a QA engineer** — the highest-risk surfaces are: the **initiation / access-code**
 flow (the first-ever member silently becomes Elder; codes have use-counts and
@@ -426,11 +429,15 @@ mints `bg-background`, `text-primary`, `text-gold`, etc.
 1. **First member is auto-Elder.** `completeInitiation` inserts `role: elder` when
    the `members` table is empty (count includes inactive rows). Do **not** seed
    `members` before the first real user, or you demote yourself. (`onboarding.ts`.)
-2. **Role gating is application-level, not RLS.** The server DB connection
-   (`DATABASE_URL`) bypasses RLS by design; RLS exists only on `messages` +
-   `channels`. Every elder/owner check lives in a server action or page via
-   `requireRole` / owner-or-elder. An unguarded mutation is a privilege-escalation
-   bug — the DB will not save you.
+2. **Two authz layers — keep both.** (a) Role/ownership gating in every server
+   action/page (`requireRole` / owner-or-elder); the `DATABASE_URL` owner role
+   bypasses RLS, so the app runs unaffected. (b) The Supabase **Data API is locked**
+   (migration `0002`): every table has RLS enabled deny-by-default and grants
+   revoked, so the browser publishable key can't reach tables directly — the only
+   client reads are message-author name/avatar/role and Council `messages` (private
+   chambers elder-only). **A NEW table is exposed until you keep it locked** (RLS on,
+   no client grant), and any new client `supabase.from(...)` needs a matching policy.
+   An unguarded server mutation is still a privilege-escalation bug.
 3. **`schema.ts` is the data-model source of truth — the migration SQL is stale.**
    `supabase/migrations/0001_initial_schema.sql` is missing `member_relationships`,
    `audit_logs`, and `gatherings.archived_at` (all added later via `drizzle-kit
