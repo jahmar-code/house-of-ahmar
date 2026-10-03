@@ -43,8 +43,9 @@ The SQL changes are complete. Code deployment is tracked separately below. Do no
 | Initial visual sweep | 44 route/role/viewport combinations: no document overflow, broken images, or browser JavaScript errors |
 | Targeted final browser regressions | 12/12 passed across all three projects: Wall input, two-session streaming, private avatars, database-stream failure/recovery |
 | Backup smoke | Two concurrent local database backups passed: distinct destinations, owner-only dump files, completion manifests |
-| Final cross-browser run | 57/57 passed in 3.7 minutes: 19 journeys each in desktop Chromium, mobile Chromium and mobile WebKit; zero retries |
-| Documentation drift check | 63 Markdown files, 225 local links, 29 vault notes and 218 source references passed |
+| Local full cross-browser run | 57/57 passed in 3.7 minutes: 19 journeys each in desktop Chromium, mobile Chromium and mobile WebKit; zero retries |
+| Production smoke | 21 read-only checks passed on the deployed app: public pages, desktop/mobile accessibility and overflow, security headers, anonymous route and media denial |
+| Documentation drift check | 63 Markdown files, 225 local links, 29 vault notes and 219 source references passed |
 
 Browser tests run only against disposable local Supabase, with three synthetic roles. Chromium desktop, 375px mobile Chromium, and iPhone-sized WebKit are configured. Axe checks cover WCAG A/AA rules; this is useful automated evidence, not a claim of perfect accessibility on every physical device.
 
@@ -54,9 +55,10 @@ The expanded checks caught and drove repairs for long-name mobile overflow, erro
 
 ## Release status and remaining limits
 
+Commit `bce6125` was pushed to `master` and Vercel reported its production deployment successful. The first clean Linux CI run passed installation, static/unit/docs checks, the runtime dependency audit, real database assertions and the build, then passed 53/57 browser cases. Its traces exposed two further harness readiness gaps: scanning profile controls during hydration and sending a photo-navigation key before the dialog's scheduled focus arrived. The follow-up waits for those explicit states and retains every accessibility and functional assertion; all six targeted regressions passed locally across the three browsers. Current remote outcomes are linked below, separately from the original local run.
+
 Release identity and remote outcomes are recorded in [master commits](https://github.com/jahmar-code/house-of-ahmar/commits/master) and the [App verification workflow](https://github.com/jahmar-code/house-of-ahmar/actions/workflows/ci.yml); check the run for the actual release SHA. Vercel's deployment status is attached to that commit. These remote results are separate from the local evidence recorded here. Public CI uses synthetic local infrastructure and receives no live Supabase credentials. The following require separate operational evidence even after code checks pass:
 
-- Production hosting health and active deployment commit.
 - Real SMTP delivery and email branding/configuration.
 - A rehearsed cross-project recovery preserving original Auth user IDs.
 - Physical-device and assistive-technology testing beyond browser emulation.

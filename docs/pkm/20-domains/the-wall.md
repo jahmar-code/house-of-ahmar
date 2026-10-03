@@ -6,6 +6,7 @@ source:
   - src/app/(house)/feed/page.tsx
   - src/components/feed/post-form.tsx
   - src/components/feed/post-card.tsx
+  - src/components/feed/post-photos.tsx
   - src/components/shared/hydrated-fieldset.tsx
   - src/components/shared/activity-time.tsx
   - src/lib/constants.ts
@@ -32,6 +33,8 @@ PostForm validates uploads and text, prevents overlapping submissions, and refre
 Its `HydratedFieldset` keeps the controlled composer and photo controls disabled until client event handlers attach. A cold page must not accept a caption that appears in the textbox but is absent from the submitted client state.
 
 Post and comment timestamps use `ActivityTime`: the server and first hydration render share a stable placeholder, then the browser supplies relative text and a local full-date tooltip. This avoids replacing a hydrated Wall when a relative-minute boundary passes between server rendering and browser startup.
+
+`PostPhotos` opens a full-photo dialog with previous/next controls, scoped arrow-key navigation, Escape dismissal, and focus return. Base UI establishes initial focus asynchronously; browser tests assert that focus has entered the dialog before sending navigation keys, as well as checking forward/backward containment and return to the original thumbnail.
 
 `createPost` rejects non-Elder announcement attempts. Authors or Elders may remove a post/comment; Elder removal of another person's content is audited. Pin changes are audited. New comments/reactions must target a live post, not a missing or deleted one.
 

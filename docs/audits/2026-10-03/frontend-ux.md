@@ -78,6 +78,8 @@ The route sweep in `house.spec.ts` retains its zero-page-error assertion. A WebK
 
 The added open-menu axe check initially sampled a mobile sheet 86ms into its 200ms entry animation, yielding dimmed temporary foreground colors and inconsistent background overlap. The shared helper now awaits actual finite animation completion before unfiltered axe analysis. The cross-timezone Council reload regression uses the same background-request sequencing as the route sweep; its trace showed a canceled dashboard prefetch 8ms after deliberate document replacement, rather than a hydration failure.
 
+The first hosted Linux WebKit run also sent an arrow key before Base UI's animation-frame initial-focus handoff. The trace still showed the entering-dialog state when the key was sent, and the eventual screenshot showed the first photo control focused. The photo test now explicitly asserts focus has entered the dialog before navigation, matching the navigation-sheet readiness check. It still requires actual arrow-key behavior, forward/backward containment, Escape, and focus return; no programmatic focus is inserted before the first arrow.
+
 The independent visual review inspected the integrated desktop Great Hall and Wall, plus the 375px mobile Great Hall, member directory, and gathering list screenshots. Long directory names remained within their cards, mobile statistics labels wrapped, and gathering summaries stayed within the screen. Actual execution totals, infrastructure failures, and the final rerun outcome belong to the [verification ledger](verification.md). These checks do not emulate a physical software keyboard or establish screen-reader conformance.
 
 ## Limits and follow-up evidence

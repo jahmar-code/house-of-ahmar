@@ -16,6 +16,10 @@ export async function checkLayout(page: Page) {
 }
 
 export async function checkA11y(page: Page) {
+  // A server-rendered value can be visible before its controlled form hydrates.
+  // Wait for that explicit readiness signal so disabled colors do not change
+  // halfway through axe's asynchronous style sampling on slower runners.
+  await expect(page.locator('fieldset[aria-busy="true"]')).toHaveCount(0);
   // Color and overlap checks need the final modal/sheet geometry. Sampling an
   // entering sheet blends its text with the animated backdrop and gives false
   // contrast failures. Wait for actual finite animations, never a fixed delay.

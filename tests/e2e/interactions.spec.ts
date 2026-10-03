@@ -22,6 +22,9 @@ test("photo viewer and mobile menu support keyboard navigation and return focus"
   const dialog = page.getByRole("dialog", { name: /^Photos from / });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole("status")).toHaveText("1 of 2");
+  // Base UI moves initial focus on an animation frame. Visibility alone can
+  // precede that handoff, especially under Linux WebKit's mobile emulation.
+  await expect.poll(() => dialog.evaluate((element) => element.contains(document.activeElement))).toBe(true);
   await page.keyboard.press("ArrowRight");
   await expect(dialog.getByRole("status")).toHaveText("2 of 2");
   await page.keyboard.press("ArrowLeft");
