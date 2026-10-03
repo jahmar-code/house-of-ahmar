@@ -1,9 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
+import { safeRedirectPath } from "@/lib/safe-redirect";
+import { getServerEnv } from "@/lib/env";
 
 /**
- * Email confirmation / magic-link callback.
+ * Email confirmation / magic-link / password-recovery callback.
  *
  * Supabase sends users here after they click the link in their email. It
  * handles both link styles:
@@ -11,17 +13,18 @@ import { createClient } from "@/lib/supabase/server";
  *   - OTP email links  → `?token_hash=&type=`   (verifyOtp)
  *
  * On success the session cookies are set and the user is forwarded to `next`
- * (defaults to /initiation). On failure they go to /sign-in with an error.
+ * (defaults to /initiation; password recovery passes /reset-password). On
+ * failure they go to /sign-in with an error, where they can ask for a new link.
  */
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
   const tokenHash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
-  const next = sanitizeNext(searchParams.get("next"));
+  // Same open-redirect guard the sign-in form uses, so the two can't drift.
+  const next = safeRedirectPath(searchParams.get("next"), "/initiation");
 
-  // Build absolute redirects from the forwarded host so this works behind a
-  // proxy/load balancer (Vercel, etc.) as well as locally.
+  // Pin redirects to the configured origin, never caller-controlled forwarded headers.
   const origin = resolveOrigin(request);
   const supabase = await createClient();
 
@@ -41,27 +44,12 @@ export async function GET(request: NextRequest) {
   );
 }
 
-/** Only allow same-site relative redirects to avoid open-redirect abuse. */
-function sanitizeNext(next: string | null): string {
-  // Must be a root-relative path. Reject protocol-relative ("//host") and
-  // backslashes ("/\host"), which the WHATWG URL parser normalizes to "/",
-  // both of which would escape to an off-site origin.
-  if (
-    next &&
-    next.startsWith("/") &&
-    !next.startsWith("//") &&
-    !next.includes("\\")
-  ) {
-    return next;
-  }
-  return "/initiation";
-}
-
 function resolveOrigin(request: NextRequest): string {
-  const forwardedHost = request.headers.get("x-forwarded-host");
-  const forwardedProto = request.headers.get("x-forwarded-proto");
-  if (forwardedHost) {
-    return `${forwardedProto ?? "https"}://${forwardedHost}`;
-  }
+  // Prefer the configured site URL so a spoofed `x-forwarded-host` can't turn
+  // the post-confirmation redirect into an off-site open redirect.
+  const configured = getServerEnv().NEXT_PUBLIC_SITE_URL;
+  if (configured) return configured.replace(/\/+$/, "");
+
+  // Never derive a redirect destination from caller-controlled forwarded headers.
   return request.nextUrl.origin;
 }

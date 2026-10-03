@@ -1,36 +1,40 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# House of Ahmar
 
-## Getting Started
+A private home on the internet for one family. Relatives share updates on **The Wall**, plan **Gatherings**, talk in **The Council**, and keep up in **The Great Hall**. Elders invite people and care for the House. Family includes spouses, in-laws, partners, and adopted children.
 
-First, run the development server:
+The app is a single-house Next.js application with Supabase Auth, Postgres, Realtime, and Storage. A Supabase account alone does not grant membership: joining also requires a valid invitation. House content is for active members.
+
+## Start here
+
+- [Documentation map](docs/pkm/Home.md) — product, architecture, domains, and operations.
+- [Local setup](docs/pkm/50-operations/local-setup.md) — install, configure, prepare Supabase, and create the first Elder.
+- [Development rules](AGENTS.md) and [specialist agents](agents/README.md) — safe, focused implementation and handoffs.
+- [Testing strategy](docs/pkm/50-operations/testing-strategy.md) — local checks and browser coverage.
+- [Release runbook](docs/pkm/50-operations/release-runbook.md) and [backup and recovery](docs/pkm/50-operations/backup-and-recovery.md).
+- [Current status](BUILD_STATUS.md) — implemented scope and what verification actually establishes.
+
+## Development
+
+Use Node 24 (`.nvmrc`), then:
 
 ```bash
+npm ci
+cp .env.example .env.local
+# Fill in values for the intended Supabase environment.
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Database schema, access policies, Storage, and Auth URLs must be prepared before the app is usable; follow the setup runbook. Never point a destructive test at the family's live project.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm run check
+npm run build
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+`check` and a production build are separate gates. Browser and integration results belong in the dated [audit evidence](docs/audits/2026-10-03/README.md), including any setup failures or skipped flows.
 
-## Learn More
+## Product boundaries
 
-To learn more about Next.js, take a look at the following resources:
+The shipped experience includes invitation onboarding, password recovery, profiles and member discovery, posts/photos/comments/reactions/milestones, gatherings and RSVPs, realtime chat, and Elder administration. The schema retains album/photo and relationship tables, but there is no Archives or family-tree product surface. There are no notification delivery, billing, public feed, or multi-house features. See [vision and scope](docs/pkm/00-overview/product-vision.md).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Historical implementation details are available through Git history. Current behavior is documented from source in `docs/pkm/`; old progress claims are not release evidence.

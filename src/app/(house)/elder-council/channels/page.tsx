@@ -7,8 +7,9 @@ import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Hash, Megaphone, Lock, MessageSquare } from "lucide-react";
+import { Archive, Hash, Megaphone, Lock, MessageSquare } from "lucide-react";
 import { CreateChannelForm } from "./create-channel-form";
+import { ChannelActions } from "./channel-actions";
 
 const typeIcons = {
   general: Hash,
@@ -90,9 +91,10 @@ export default async function ManageChannelsPage() {
                         {channel.isArchived && (
                           <Badge
                             variant="outline"
-                            className="border-destructive/30 bg-destructive/10 text-[10px] text-destructive"
+                            className="gap-1 border-border text-[10px] text-foreground"
                           >
-                            Archived
+                            <Archive className="h-2.5 w-2.5" />
+                            Closed
                           </Badge>
                         )}
                       </div>
@@ -102,6 +104,12 @@ export default async function ManageChannelsPage() {
                         </p>
                       )}
                     </div>
+                    <ChannelActions
+                      channelId={channel.id}
+                      name={channel.name}
+                      description={channel.description}
+                      isArchived={channel.isArchived ?? false}
+                    />
                   </CardContent>
                 </Card>
               );

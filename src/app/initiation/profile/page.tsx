@@ -1,5 +1,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getHouseSettings } from "@/lib/settings";
+import { HouseMonogram } from "@/components/shared/house-monogram";
+import { SignOutLink } from "../sign-out-link";
 import { ProfileForm } from "./profile-form";
 
 export default async function ProfilePage() {
@@ -9,24 +12,31 @@ export default async function ProfilePage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/sign-in");
 
+  const settings = await getHouseSettings();
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
       <div className="w-full max-w-md space-y-8 px-6">
         <div className="text-center">
-          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full border border-border bg-card">
-            <span className="text-2xl font-semibold tracking-tight text-foreground">
-              A
-            </span>
-          </div>
+          <HouseMonogram
+            houseName={settings.houseName}
+            size="md"
+            className="mx-auto mb-5"
+          />
+          <p className="mb-2 text-xs font-medium tracking-wider text-muted-foreground uppercase">
+            Step 3 of 3
+          </p>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Your Identity
+            Tell us who you are
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Tell the House who you are.
+            This is how the family will see you. Only your name is required.
           </p>
         </div>
 
         <ProfileForm />
+
+        <SignOutLink />
       </div>
     </div>
   );

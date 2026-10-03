@@ -1,8 +1,11 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "./schema";
+import { getServerEnv } from "@/lib/env";
 
-const connectionString = process.env.DATABASE_URL!;
+// Validated up front: a missing DATABASE_URL used to build cleanly and then
+// throw an opaque connection error on the first query.
+const connectionString = getServerEnv().DATABASE_URL;
 
 // Reuse a single client across HMR reloads in dev so we don't leak
 // connections every time the module reloads.

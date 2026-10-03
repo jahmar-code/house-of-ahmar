@@ -28,20 +28,30 @@ alter default privileges in schema public revoke all on functions from anon, aut
 -- 2) Enable RLS on every table (defense in depth — with no policy, the client
 --    roles are denied even if a grant is ever re-added by mistake). The owner
 --    role behind DATABASE_URL is exempt, so the app is unaffected.
-alter table public.members              enable row level security;
-alter table public.access_codes         enable row level security;
-alter table public.posts                enable row level security;
-alter table public.comments             enable row level security;
-alter table public.reactions            enable row level security;
-alter table public.gatherings           enable row level security;
-alter table public.rsvps                enable row level security;
-alter table public.channels             enable row level security;
-alter table public.messages             enable row level security;
-alter table public.albums               enable row level security;
-alter table public.photos               enable row level security;
-alter table public.house_settings       enable row level security;
-alter table public.member_relationships enable row level security;
-alter table public.audit_logs           enable row level security;
+--
+--    Order-independent: `member_relationships` and `audit_logs` were added by
+--    `drizzle-kit push` and do not exist in 0001, so a plain ALTER would abort
+--    this transaction on a clean rebuild and silently roll back the ENTIRE
+--    lockdown (grants intact, RLS off). Skip a table that is not there yet
+--    rather than losing everything — the loop covers it on the next run.
+--    ⚠️  Verify after any rebuild: `select relname, relrowsecurity from pg_class
+--        where relnamespace = 'public'::regnamespace and relkind = 'r';`
+do $$
+declare t text;
+begin
+  foreach t in array array[
+    'members', 'access_codes', 'posts', 'comments', 'reactions',
+    'gatherings', 'rsvps', 'channels', 'messages', 'albums', 'photos',
+    'house_settings', 'member_relationships', 'audit_logs'
+  ] loop
+    if to_regclass('public.' || t) is not null then
+      execute format('alter table public.%I enable row level security', t);
+    else
+      raise warning
+        '[0002] table public.% does not exist yet — RLS NOT enabled. Run drizzle-kit push, then re-run this migration.', t;
+    end if;
+  end loop;
+end $$;
 
 -- 3) Remove 0001's over-permissive policies (membership-only, no channel-type
 --    check, and a client INSERT the app never uses — writes go via server actions).
@@ -76,6 +86,7 @@ revoke all on function public.is_active_elder()  from anon, authenticated;
 -- members: expose ONLY the non-PII columns a chat message renders (name/avatar/
 --    role). email, phone, bio, birthday, auth_user_id, last_seen_at stay hidden.
 grant select (id, display_name, avatar_url, role) on public.members to authenticated;
+drop policy if exists members_client_read on public.members;
 create policy members_client_read on public.members
   for select to authenticated
   using (public.is_active_member());
@@ -83,6 +94,7 @@ create policy members_client_read on public.members
 -- messages: realtime read only (no insert/update/delete grant — the app writes
 --    via server actions over DATABASE_URL). Private chambers are elder-only.
 grant select on public.messages to authenticated;
+drop policy if exists messages_client_read on public.messages;
 create policy messages_client_read on public.messages
   for select to authenticated
   using (

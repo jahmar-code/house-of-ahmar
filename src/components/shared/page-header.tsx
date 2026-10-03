@@ -1,7 +1,15 @@
+import { Skeleton } from "@/components/ui/skeleton";
+
 interface PageHeaderProps {
   title: string;
   description?: string;
   eyebrow?: string;
+  /**
+   * Heading level for the title. Pages keep the default `h1`; a section that
+   * sits under an existing page heading passes `as="h2"` so the document
+   * outline never skips a level.
+   */
+  as?: "h1" | "h2";
   children?: React.ReactNode;
 }
 
@@ -9,6 +17,7 @@ export function PageHeader({
   title,
   description,
   eyebrow,
+  as: Heading = "h1",
   children,
 }: PageHeaderProps) {
   return (
@@ -19,9 +28,9 @@ export function PageHeader({
             {eyebrow}
           </p>
         )}
-        <h1 className="font-heading text-2xl font-bold tracking-tight text-foreground text-balance sm:text-3xl">
+        <Heading className="font-heading text-2xl font-bold tracking-tight text-foreground text-balance sm:text-3xl">
           {title}
-        </h1>
+        </Heading>
         {description && (
           <p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">
             {description}
@@ -29,8 +38,37 @@ export function PageHeader({
         )}
       </div>
       {children && (
-        <div className="flex shrink-0 items-center gap-2">{children}</div>
+        <div className="flex shrink-0 flex-wrap items-center gap-2">{children}</div>
       )}
+    </div>
+  );
+}
+
+/**
+ * The header shape every `loading.tsx` in the House opens with. The block
+ * sizes mirror the real header's line boxes (2rem title / 2.25rem at `sm`,
+ * 1.25rem description + its 0.375rem gap) so the skeleton and the page it
+ * becomes occupy the same space and nothing jumps.
+ *
+ * It also carries the one polite "loading" announcement per route, so screen
+ * readers get told a navigation is in flight instead of sitting in silence.
+ */
+export function PageHeaderSkeleton({
+  /** What is loading, for the screen-reader announcement. */
+  label = "Loading",
+}: {
+  label?: string;
+}) {
+  return (
+    <div className="mb-6 sm:mb-8">
+      <p role="status" className="sr-only">
+        {label}
+      </p>
+      <Skeleton className="h-8 w-48 sm:h-9 sm:w-64" aria-hidden="true" />
+      <Skeleton
+        className="mt-1.5 h-5 w-full max-w-xs"
+        aria-hidden="true"
+      />
     </div>
   );
 }

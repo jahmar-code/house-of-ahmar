@@ -3,7 +3,13 @@ import postgres from "postgres";
 
 config({ path: ".env.local" });
 
-const sql = postgres(process.env.DATABASE_URL, { ssl: "require" });
+const url = process.env.DATABASE_URL;
+if (!url) {
+  console.error("DATABASE_URL missing — see .env.example");
+  process.exit(1);
+}
+
+const sql = postgres(url, { ssl: "require" });
 
 const tables = ["messages", "channels"];
 

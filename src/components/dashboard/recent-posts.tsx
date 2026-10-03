@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ArrowRight } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { Post, Member } from "@/types";
 
@@ -26,9 +27,18 @@ export function RecentPosts({ posts }: RecentPostsProps) {
       </CardHeader>
       <CardContent>
         {posts.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            The Wall is empty. Be the first to post.
-          </p>
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              Nothing on The Wall yet.
+            </p>
+            <Link
+              href="/feed"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-lg text-sm font-medium text-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            >
+              Write the first post
+              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+            </Link>
+          </div>
         ) : (
           <div className="space-y-2.5">
             {posts.map((post) => (
@@ -38,7 +48,7 @@ export function RecentPosts({ posts }: RecentPostsProps) {
                 className="flex items-start gap-3 rounded-lg border border-border bg-secondary/20 p-3 transition-colors hover:border-foreground/20 hover:bg-secondary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
               >
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={post.author.avatarUrl ?? undefined} />
+                  <AvatarImage src={post.author.avatarUrl ?? undefined} alt="" />
                   <AvatarFallback className="bg-secondary text-xs text-foreground">
                     {post.author.displayName.charAt(0).toUpperCase()}
                   </AvatarFallback>

@@ -12,36 +12,49 @@ export function AccessCodeForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(formData: FormData) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    // onSubmit rather than `<form action>`: React resets an action form on
+    // completion, which would clear the typed code on every failed attempt.
+    e.preventDefault();
+    if (loading) return;
     setLoading(true);
     setError(null);
 
-    const result = await validateAccessCode(formData);
-    if (result.success) {
-      // Store code in session storage for the next step
-      const code = formData.get("code") as string;
-      sessionStorage.setItem("hoa_access_code", code);
-      router.push("/initiation/profile");
-    } else {
-      setError(result.error);
+    const formData = new FormData(e.currentTarget);
+    try {
+      const result = await validateAccessCode(formData);
+      if (result.success) {
+        // Store code in session storage for the next step
+        const code = formData.get("code") as string;
+        sessionStorage.setItem("hoa_access_code", code);
+        router.push("/initiation/profile");
+      } else {
+        setError(result.error);
+      }
+    } catch {
+      setError("Couldn't check that code. Check your connection and allow browser storage, then try again.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   return (
-    <form action={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-2">
         <Label htmlFor="code" className="text-muted-foreground">
-          House Code
+          Family code
         </Label>
         <Input
           id="code"
           name="code"
           type="text"
-          placeholder="Enter your family code"
+          placeholder="Type it here"
           required
           autoFocus
-          className="h-12 border-border bg-card text-center text-lg tracking-widest uppercase placeholder:normal-case placeholder:tracking-normal placeholder:text-muted-foreground/50"
+          autoCapitalize="characters"
+          autoCorrect="off"
+          spellCheck={false}
+          className="h-12 border-border bg-card text-center text-lg tracking-widest uppercase placeholder:normal-case placeholder:tracking-normal placeholder:text-muted-foreground"
         />
       </div>
 
@@ -52,11 +65,11 @@ export function AccessCodeForm() {
       )}
 
       <Button type="submit" disabled={loading} className="h-11 w-full">
-        {loading ? "Verifying..." : "Present Code"}
+        {loading ? "Checking..." : "Continue"}
       </Button>
 
       <p className="text-center text-xs text-muted-foreground">
-        Don&apos;t have a code? Ask a family elder.
+        No code? Ask whoever invited you.
       </p>
     </form>
   );

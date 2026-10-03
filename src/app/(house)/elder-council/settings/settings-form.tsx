@@ -21,16 +21,22 @@ export function SettingsForm({ initial }: SettingsFormProps) {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (loading) return;
     setLoading(true);
     const formData = new FormData(e.currentTarget);
-    const result = await updateHouseSettings(formData);
-    if (result.success) {
-      toast.success("House settings saved");
-      router.refresh();
-    } else {
-      toast.error(result.error);
+    try {
+      const result = await updateHouseSettings(formData);
+      if (result.success) {
+        toast.success("House settings saved");
+        router.refresh();
+      } else {
+        toast.error(result.error);
+      }
+    } catch {
+      toast.error("That didn't save. Check your connection and try again.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   return (
@@ -50,7 +56,7 @@ export function SettingsForm({ initial }: SettingsFormProps) {
               className="h-11 bg-muted/40"
             />
             <p className="text-xs text-muted-foreground">
-              Displayed in the sidebar, landing page, and header.
+              Shown in the sidebar, the header, and on the landing page.
             </p>
           </div>
 
@@ -65,12 +71,13 @@ export function SettingsForm({ initial }: SettingsFormProps) {
               className="resize-none bg-muted/40"
             />
             <p className="text-xs text-muted-foreground">
-              Shown on the landing page beneath the crest. Newlines preserved.
+              Shown on the landing page under the House name. Line breaks are
+              kept.
             </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="welcomeMessage">Dashboard Welcome Message</Label>
+            <Label htmlFor="welcomeMessage">Welcome Message</Label>
             <Textarea
               id="welcomeMessage"
               name="welcomeMessage"
@@ -80,27 +87,34 @@ export function SettingsForm({ initial }: SettingsFormProps) {
               className="resize-none bg-muted/40"
             />
             <p className="text-xs text-muted-foreground">
-              Greeting shown at the top of The Great Hall.
+              The greeting everyone reads at the top of The Great Hall.
             </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="coverImageUrl">Cover Image URL</Label>
+            <Label htmlFor="coverImageUrl">Cover Photo</Label>
             <Input
               id="coverImageUrl"
               name="coverImageUrl"
-              type="url"
+              inputMode="url"
               defaultValue={initial.coverImageUrl}
               placeholder="https://..."
               className="h-11 bg-muted/40"
             />
             <p className="text-xs text-muted-foreground">
-              Optional. Leave blank to use the default crest.
+              Optional. A family photo shown across the top of The Great Hall
+              and behind the landing page. External cover links are public; use a
+              photo you are comfortable showing to visitors.
             </p>
             {initial.coverImageUrl && (
+              // The cover is an Elder-typed URL on an arbitrary host, so
+              // next/image would need a wildcard remotePattern — which turns
+              // the optimizer into an open image proxy. A plain <img> is the
+              // correct trade here; it is one preview on an admin screen.
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={initial.coverImageUrl}
-                alt="Current cover"
+                alt="Current cover photo"
                 className="mt-3 max-h-40 w-full rounded-lg border border-border object-cover"
               />
             )}
@@ -108,7 +122,7 @@ export function SettingsForm({ initial }: SettingsFormProps) {
         </CardContent>
 
         <CardFooter className="justify-end">
-          <Button type="submit" disabled={loading}>
+          <Button type="submit" disabled={loading} className="h-11">
             {loading ? "Saving..." : "Save Settings"}
           </Button>
         </CardFooter>

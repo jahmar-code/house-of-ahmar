@@ -3,15 +3,18 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { Shield, LogOut, ChevronsUpDown } from "lucide-react";
+import { Shield, LogOut, ChevronsUpDown, UserRound } from "lucide-react";
+import { HouseMonogram } from "@/components/shared/house-monogram";
 import { NAV_ITEMS, isNavActive } from "./nav-items";
 
 interface HouseSidebarProps {
@@ -26,10 +29,15 @@ export function HouseSidebar({ role, displayName, avatarUrl, houseName }: HouseS
   const router = useRouter();
 
   async function handleSignOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/sign-in");
-    router.refresh();
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      router.push("/sign-in");
+      router.refresh();
+    } catch {
+      toast.error("Couldn't sign out. Check your connection and try again.");
+    }
   }
 
   const initials = displayName
@@ -47,22 +55,21 @@ export function HouseSidebar({ role, displayName, avatarUrl, houseName }: HouseS
           href="/dashboard"
           className="group flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
         >
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-lg font-bold text-primary-foreground">
-            A
-          </span>
+          <HouseMonogram houseName={houseName} size="sm" variant="brand" />
           <span className="truncate text-lg font-semibold tracking-tight text-sidebar-foreground">
             {houseName}
           </span>
         </Link>
 
         {/* Navigation */}
-        <nav className="flex flex-1 flex-col gap-1">
+        <nav aria-label="Primary" className="flex flex-1 flex-col gap-1 overflow-y-auto">
           {NAV_ITEMS.map((item) => {
             const isActive = isNavActive(pathname, item.href);
             return (
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={isActive ? "page" : undefined}
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
                   isActive
@@ -82,6 +89,9 @@ export function HouseSidebar({ role, displayName, avatarUrl, houseName }: HouseS
               <div className="my-3 h-px bg-sidebar-border" />
               <Link
                 href="/elder-council"
+                aria-current={
+                  pathname.startsWith("/elder-council") ? "page" : undefined
+                }
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
                   pathname.startsWith("/elder-council")
@@ -121,7 +131,15 @@ export function HouseSidebar({ role, displayName, avatarUrl, houseName }: HouseS
             <ChevronsUpDown className="h-4 w-4 shrink-0 text-muted-foreground" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={handleSignOut}>
+            <DropdownMenuItem
+              className="py-2"
+              render={<Link href="/settings" />}
+            >
+              <UserRound className="mr-2 h-4 w-4" />
+              Your profile
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="py-2" onClick={handleSignOut}>
               <LogOut className="mr-2 h-4 w-4" />
               Sign out
             </DropdownMenuItem>

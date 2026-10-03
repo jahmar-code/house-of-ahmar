@@ -12,9 +12,14 @@
 
 # testing
 /coverage
+/playwright-report/
+/test-results/
+/playwright/.auth/
+/artifacts/
 
 # next.js
 /.next/
+/.next-e2e/
 /out/
 
 # production
@@ -30,8 +35,15 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files — real secrets never get committed…
 .env*
+# …but the CONTRACT does: without this negation a fresh clone has no idea which
+# variables the House needs, and the project is un-rebuildable off this laptop.
+!.env.example
+
+# local backups from scripts/backup.mjs — a full copy of the family's data.
+# NEVER commit these.
+/backups/
 
 # vercel
 .vercel
@@ -40,5 +52,14 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# clerk configuration (can include secrets)
+# clerk configuration (can include secrets) — Clerk is gone; kept so an old
+# working copy doesn't resurrect it
 /.clerk/
+
+# supabase CLI scratch (a version cache, not source)
+supabase/.temp/
+supabase/.branches/
+
+# Vendor setup notes containing the live project ref + publishable key.
+# Local setup notes are not project source and must remain untracked.
+supabase.txt

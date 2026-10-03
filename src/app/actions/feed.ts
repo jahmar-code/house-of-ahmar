@@ -7,12 +7,16 @@ import { eq, and } from "drizzle-orm";
 import { requireAuth, requireRole } from "@/lib/auth";
 import { postSchema, commentSchema } from "@/lib/validators";
 import { REACTION_EMOJIS } from "@/lib/constants";
+import { logAudit } from "@/lib/audit";
+import { ownedMediaUrl } from "@/lib/media";
 import { z } from "zod";
-import type { ActionResult } from "@/types";
+import type { ActionResult, Post } from "@/types";
 
 const uuid = z.string().uuid();
 
-export async function createPost(formData: FormData): Promise<ActionResult> {
+export async function createPost(
+  formData: FormData
+): Promise<ActionResult<{ id: string; type: Post["type"] }>> {
   const ctx = await requireRole("member"); // guests are read-only
 
   const rawMediaUrls = formData.get("mediaUrls") as string | null;
@@ -25,45 +29,76 @@ export async function createPost(formData: FormData): Promise<ActionResult> {
     }
   }
 
+  const rawContent = formData.get("content");
   const parsed = postSchema.safeParse({
-    content: formData.get("content"),
+    // A photo-only post sends no `content` field at all — keep it undefined
+    // rather than coercing FormData's null into a string.
+    content: typeof rawContent === "string" ? rawContent : undefined,
     type: formData.get("type") || "text",
     mediaUrls,
+    milestoneKind: formData.get("milestoneKind") || undefined,
   });
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0].message };
   }
 
-  // Announcements are elder-only; a non-elder attempt silently becomes a text post.
-  const type =
-    parsed.data.type === "announcement" && ctx.role !== "elder"
-      ? "text"
-      : parsed.data.type;
+  // Announcements are elder-only. Say so instead of quietly downgrading the
+  // post — the caller must never be told one thing happened when another did.
+  if (parsed.data.type === "announcement" && ctx.role !== "elder") {
+    return { success: false, error: "Only Elders can post announcements" };
+  }
 
-  await db.insert(posts).values({
-    authorId: ctx.memberId,
-    content: parsed.data.content,
-    type,
-    mediaUrls: parsed.data.mediaUrls ?? [],
-  });
+  const normalizedMedia = (parsed.data.mediaUrls ?? []).map((url) => ownedMediaUrl(url, ctx.memberId));
+  if (normalizedMedia.some((url) => url === null)) {
+    return { success: false, error: "Photos must be uploaded to the House from your account" };
+  }
+
+  const [post] = await db
+    .insert(posts)
+    .values({
+      authorId: ctx.memberId,
+      content: parsed.data.content?.trim() || null,
+      type: parsed.data.type,
+      mediaUrls: normalizedMedia as string[],
+      milestoneKind: parsed.data.milestoneKind ?? null,
+    })
+    .returning();
 
   revalidatePath("/feed");
   revalidatePath("/dashboard");
-  return { success: true };
+  return { success: true, data: { id: post.id, type: post.type } };
 }
 
 export async function togglePostPin(postId: string): Promise<ActionResult> {
-  await requireRole("elder");
+  const ctx = await requireRole("elder");
+
+  if (!uuid.safeParse(postId).success) {
+    return { success: false, error: "Invalid post" };
+  }
 
   const post = await db.query.posts.findFirst({
     where: eq(posts.id, postId),
   });
-  if (!post) return { success: false, error: "Post not found" };
+  if (!post || post.isDeleted) {
+    return { success: false, error: "Post not found" };
+  }
+
+  const pinned = !post.isPinned;
 
   await db
     .update(posts)
-    .set({ isPinned: !post.isPinned, updatedAt: new Date() })
+    .set({ isPinned: pinned, updatedAt: new Date() })
     .where(eq(posts.id, postId));
+
+  // Pinning moves another relative's post to the top of The Wall for everyone —
+  // an Elder power, so it leaves a trail either way.
+  await logAudit({
+    actorId: ctx.memberId,
+    action: pinned ? "post.pinned" : "post.unpinned",
+    entityType: "post",
+    entityId: postId,
+    metadata: { authorId: post.authorId },
+  });
 
   revalidatePath("/feed");
   revalidatePath("/dashboard");
@@ -72,6 +107,10 @@ export async function togglePostPin(postId: string): Promise<ActionResult> {
 
 export async function deletePost(postId: string): Promise<ActionResult> {
   const ctx = await requireAuth();
+
+  if (!uuid.safeParse(postId).success) {
+    return { success: false, error: "Invalid post" };
+  }
 
   const post = await db.query.posts.findFirst({
     where: eq(posts.id, postId),
@@ -88,8 +127,65 @@ export async function deletePost(postId: string): Promise<ActionResult> {
     .set({ isDeleted: true, updatedAt: new Date() })
     .where(eq(posts.id, postId));
 
+  // Removing your own post is nobody's business; an Elder removing a relative's
+  // post is, so that one is on the record.
+  if (post.authorId !== ctx.memberId) {
+    await logAudit({
+      actorId: ctx.memberId,
+      action: "post.deleted_by_elder",
+      entityType: "post",
+      entityId: postId,
+      metadata: {
+        authorId: post.authorId,
+        preview: post.content?.slice(0, 140) ?? null,
+      },
+    });
+  }
+
   revalidatePath("/feed");
   revalidatePath("/dashboard");
+  return { success: true };
+}
+
+export async function deleteComment(commentId: string): Promise<ActionResult> {
+  const ctx = await requireAuth();
+
+  if (!uuid.safeParse(commentId).success) {
+    return { success: false, error: "Invalid comment" };
+  }
+
+  const comment = await db.query.comments.findFirst({
+    where: eq(comments.id, commentId),
+  });
+  if (!comment || comment.isDeleted) {
+    return { success: false, error: "Comment not found" };
+  }
+
+  // Same owner-or-elder gate as deletePost.
+  if (comment.authorId !== ctx.memberId && ctx.role !== "elder") {
+    return { success: false, error: "Not authorized" };
+  }
+
+  await db
+    .update(comments)
+    .set({ isDeleted: true })
+    .where(eq(comments.id, commentId));
+
+  if (comment.authorId !== ctx.memberId) {
+    await logAudit({
+      actorId: ctx.memberId,
+      action: "comment.deleted_by_elder",
+      entityType: "comment",
+      entityId: commentId,
+      metadata: {
+        authorId: comment.authorId,
+        postId: comment.postId,
+        preview: comment.content.slice(0, 140),
+      },
+    });
+  }
+
+  revalidatePath("/feed");
   return { success: true };
 }
 
@@ -138,6 +234,9 @@ export async function toggleReaction(
   if (!REACTION_EMOJIS.some((r) => r.key === emoji)) {
     return { success: false, error: "Invalid reaction" };
   }
+
+  const post = await db.query.posts.findFirst({ where: eq(posts.id, postId) });
+  if (!post || post.isDeleted) return { success: false, error: "Post not found" };
 
   const existing = await db.query.reactions.findFirst({
     where: and(

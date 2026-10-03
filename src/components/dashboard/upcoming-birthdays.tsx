@@ -42,7 +42,7 @@ export function UpcomingBirthdays({ members }: UpcomingBirthdaysProps) {
       <CardContent>
         {upcoming.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No birthdays on record.
+            No birthdays saved yet.
           </p>
         ) : (
           <div className="space-y-2.5">
@@ -52,7 +52,7 @@ export function UpcomingBirthdays({ members }: UpcomingBirthdaysProps) {
                 className="flex items-center gap-3 rounded-lg border border-border bg-secondary/20 p-3"
               >
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={member.avatarUrl ?? undefined} />
+                  <AvatarImage src={member.avatarUrl ?? undefined} alt="" />
                   <AvatarFallback className="bg-secondary text-xs text-foreground">
                     {member.displayName.charAt(0).toUpperCase()}
                   </AvatarFallback>

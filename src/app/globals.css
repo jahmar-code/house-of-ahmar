@@ -31,6 +31,10 @@
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
   --color-muted: var(--muted);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
@@ -80,16 +84,25 @@
   --accent: oklch(0.269 0 0);              /* neutral-800 */
   --accent-foreground: oklch(0.93 0 0);
 
-  --destructive: oklch(0.6 0.21 22);       /* red-500-ish */
+  --destructive: oklch(0.72 0.18 22);      /* readable red text on dark surfaces */
+
+  /* "Going" / "maybe" states (RSVP, presence). These were raw Tailwind
+     emerald/amber in components — the two roles now live in the token system
+     so they can be retuned with the rest of the palette. */
+  --success: oklch(0.70 0.14 160);         /* emerald-400-ish */
+  --success-foreground: oklch(0.145 0 0);
+  --warning: oklch(0.80 0.14 80);          /* amber-400-ish */
+  --warning-foreground: oklch(0.145 0 0);
+
   --border: oklch(0.269 0 0);              /* neutral-800 */
-  --input: oklch(0.205 0 0);               /* subtle bg for form fields */
+  --input: oklch(0.62 0 0);                /* visible field outlines on dark cards */
   --ring: oklch(0.75 0.183 55.934);        /* orange-400 */
 
   /* Aliases for legacy class names (text-gold, bg-gold, border-gold,
      text-crimson). Now render as the landing-page orange / red. */
   --gold: oklch(0.75 0.183 55.934);
   --gold-foreground: oklch(0.145 0 0);
-  --crimson: oklch(0.6 0.21 22);
+  --crimson: oklch(0.72 0.18 22);
 
   /* Charts — orange-led, with neutrals for variation */
   --chart-1: oklch(0.75 0.183 55.934);     /* orange-400 */
@@ -154,6 +167,22 @@
   }
   ::-webkit-scrollbar-corner {
     background: transparent;
+  }
+
+  /* Respect the OS setting. `scroll-behavior: smooth` above is otherwise
+     unconditional, and motion sensitivity is common in an older family. */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 

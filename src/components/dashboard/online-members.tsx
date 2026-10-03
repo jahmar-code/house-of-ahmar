@@ -11,14 +11,17 @@ export function OnlineMembers({ members }: OnlineMembersProps) {
     <Card className="border-border bg-card">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base font-semibold tracking-tight text-foreground">
-          <span className="h-2 w-2 rounded-full bg-emerald-500" />
+          <span className="h-2 w-2 rounded-full bg-success" />
           Online Now
         </CardTitle>
       </CardHeader>
       <CardContent>
         {members.length === 0 ? (
+          // The presence heartbeat only fires client-side after mount, so the
+          // server render can legitimately show an empty list to the very
+          // person reading it. Never tell them they are not here.
           <p className="text-sm text-muted-foreground">
-            No one is in the House right now.
+            Just you right now.
           </p>
         ) : (
           <div className="flex flex-wrap gap-2">
@@ -29,12 +32,12 @@ export function OnlineMembers({ members }: OnlineMembersProps) {
               >
                 <div className="relative">
                   <Avatar className="h-6 w-6">
-                    <AvatarImage src={member.avatarUrl ?? undefined} />
+                    <AvatarImage src={member.avatarUrl ?? undefined} alt="" />
                     <AvatarFallback className="bg-secondary text-xs text-foreground">
                       {member.displayName.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full border-2 border-card bg-emerald-500" />
+                  <span className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full border-2 border-card bg-success" />
                 </div>
                 <span className="text-sm text-foreground">
                   {member.displayName}

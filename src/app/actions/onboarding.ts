@@ -5,18 +5,35 @@ import { db } from "@/lib/db";
 import { members, accessCodes } from "@/lib/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { accessCodeSchema, profileSchema } from "@/lib/validators";
+import {
+  checkRateLimit,
+  clearRateLimit,
+  recordFailedAttempt,
+} from "@/lib/rate-limit";
+import { getServerEnv } from "@/lib/env";
 import type { ActionResult } from "@/types";
 
-async function ensureBootstrapCodeRow(code: string): Promise<void> {
-  // Idempotent insert so the env-code's uses are tracked alongside other codes.
-  await db
-    .insert(accessCodes)
-    .values({
-      code,
-      label: "Bootstrap (env)",
-      maxUses: 1000,
-    })
-    .onConflictDoNothing({ target: accessCodes.code });
+// Cap access-code attempts per user to blunt brute-forcing of the invite gate.
+// Only *failures* count, so a relative who types their code correctly is never
+// throttled by it.
+const CODE_ATTEMPT_LIMIT = 8;
+const CODE_ATTEMPT_WINDOW_MS = 10 * 60 * 1000;
+
+// The two steps get SEPARATE buckets. They used to share one, so fumbling the
+// code screen locked a new relative out of the profile step — and out of the
+// self-healing retry in completeInitiation that exists to rescue them.
+const codeAttemptKey = (userId: string) => `initiation:code:${userId}`;
+const joinAttemptKey = (userId: string) => `initiation:join:${userId}`;
+
+const TOO_MANY_ATTEMPTS =
+  "Too many tries just now — give it a few minutes and have another go.";
+const BAD_CODE = "That code isn't valid. Ask whoever invited you for a new one.";
+
+async function memberCount(): Promise<number> {
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(members);
+  return row?.count ?? 0;
 }
 
 export async function validateAccessCode(
@@ -28,6 +45,11 @@ export async function validateAccessCode(
   } = await supabase.auth.getUser();
   if (!user) return { success: false, error: "Not authenticated" };
 
+  const attemptKey = codeAttemptKey(user.id);
+  if (!checkRateLimit(attemptKey, CODE_ATTEMPT_LIMIT).allowed) {
+    return { success: false, error: TOO_MANY_ATTEMPTS };
+  }
+
   const parsed = accessCodeSchema.safeParse({
     code: formData.get("code"),
   });
@@ -35,10 +57,18 @@ export async function validateAccessCode(
     return { success: false, error: parsed.error.issues[0].message };
   }
 
-  const defaultCode = process.env.HOA_DEFAULT_ACCESS_CODE;
-  if (defaultCode && parsed.data.code === defaultCode.trim().toUpperCase()) {
-    await ensureBootstrapCodeRow(parsed.data.code);
-    return { success: true };
+  const bootstrapCode = getServerEnv().HOA_DEFAULT_ACCESS_CODE?.trim().toUpperCase();
+
+  // The env bootstrap code may ONLY ever create the founding Elder. Once the
+  // House has a member it is retired here as well as in completeInitiation, so
+  // this screen never accepts a code that redemption would then refuse.
+  if (bootstrapCode && parsed.data.code === bootstrapCode) {
+    if ((await memberCount()) === 0) {
+      clearRateLimit(attemptKey);
+      return { success: true };
+    }
+    recordFailedAttempt(attemptKey, CODE_ATTEMPT_WINDOW_MS);
+    return { success: false, error: BAD_CODE };
   }
 
   const codeRecord = await db.query.accessCodes.findFirst({
@@ -49,17 +79,43 @@ export async function validateAccessCode(
   });
 
   if (!codeRecord) {
-    return { success: false, error: "Invalid or expired access code" };
+    recordFailedAttempt(attemptKey, CODE_ATTEMPT_WINDOW_MS);
+
+    // First-boot guard rail: an empty House with no bootstrap code configured
+    // is a sealed box, and the generic message gives the owner no clue why.
+    if (!bootstrapCode) {
+      const [row] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(accessCodes);
+      if ((row?.count ?? 0) === 0) {
+        return {
+          success: false,
+          error:
+            "The House hasn't been opened yet — no codes exist. Set HOA_DEFAULT_ACCESS_CODE on the server to create the first Elder.",
+        };
+      }
+    }
+
+    return { success: false, error: BAD_CODE };
   }
 
   if (codeRecord.maxUses && codeRecord.useCount >= codeRecord.maxUses) {
-    return { success: false, error: "This code has been fully used" };
+    recordFailedAttempt(attemptKey, CODE_ATTEMPT_WINDOW_MS);
+    return {
+      success: false,
+      error: "That code has already been used. Ask for a fresh one.",
+    };
   }
 
   if (codeRecord.expiresAt && new Date(codeRecord.expiresAt) < new Date()) {
-    return { success: false, error: "This code has expired" };
+    recordFailedAttempt(attemptKey, CODE_ATTEMPT_WINDOW_MS);
+    return {
+      success: false,
+      error: "That code has expired. Ask for a fresh one.",
+    };
   }
 
+  clearRateLimit(attemptKey);
   return { success: true };
 }
 
@@ -72,23 +128,19 @@ export async function completeInitiation(
   } = await supabase.auth.getUser();
   if (!user) return { success: false, error: "Not authenticated" };
 
+  // Retry succeeds even if an earlier request committed before the response
+  // reached the phone. Inactive membership is never revived by onboarding.
   const existing = await db.query.members.findFirst({
     where: eq(members.authUserId, user.id),
   });
   if (existing) {
-    // Idempotent + self-healing: a prior updateUser may have failed, leaving
-    // user_metadata.hoa_member_id unset → the proxy loops /dashboard ↔ /initiation.
-    // Re-sync it (and surface any error) on every retry.
-    const { error: syncErr } = await supabase.auth.updateUser({
-      data: { hoa_member_id: existing.id, hoa_role: existing.role },
-    });
-    if (syncErr) {
-      return {
-        success: false,
-        error: "Could not finish initiation — please try again.",
-      };
-    }
+    if (!existing.isActive) return { success: false, error: "Your access has been paused. Ask an Elder to restore it." };
     return { success: true, data: { memberId: existing.id } };
+  }
+
+  const attemptKey = joinAttemptKey(user.id);
+  if (!checkRateLimit(attemptKey, CODE_ATTEMPT_LIMIT).allowed) {
+    return { success: false, error: TOO_MANY_ATTEMPTS };
   }
 
   const parsed = profileSchema.safeParse({
@@ -105,11 +157,10 @@ export async function completeInitiation(
   // The access code is the invite-only gate. The client `validateAccessCode`
   // check is a UX nicety, NOT the security boundary — re-validate and redeem
   // the code here, on the server, before creating the member.
-  const code = ((formData.get("accessCode") as string | null) ?? "")
-    .trim()
-    .toUpperCase();
-  if (!code) return { success: false, error: "An access code is required" };
-  const bootstrapCode = process.env.HOA_DEFAULT_ACCESS_CODE?.trim().toUpperCase();
+  const codeInput = accessCodeSchema.safeParse({ code: formData.get("accessCode") });
+  if (!codeInput.success) return { success: false, error: codeInput.error.issues[0].message };
+  const code = codeInput.data.code;
+  const bootstrapCode = getServerEnv().HOA_DEFAULT_ACCESS_CODE?.trim().toUpperCase();
   const isBootstrap = !!bootstrapCode && code === bootstrapCode;
 
   // One transaction, serialized by a transaction-scoped advisory lock, so the
@@ -118,29 +169,53 @@ export async function completeInitiation(
   const result = await db.transaction(async (tx) => {
     await tx.execute(sql`SELECT pg_advisory_xact_lock(728100)`);
 
-    // The env bootstrap code is tracked as a normal access_codes row.
+    // A concurrent request may have passed the outer retry check before this
+    // transaction acquired the lock. Recheck inside, before consuming an invite.
+    const joined = await tx.query.members.findFirst({ where: eq(members.authUserId, user.id) });
+    if (joined) {
+      return joined.isActive
+        ? { ok: true as const, newMember: joined }
+        : { ok: false as const, error: "Your access has been paused. Ask an Elder to restore it." };
+    }
+
+    const [countRow] = await tx
+      .select({ count: sql<number>`count(*)::int` })
+      .from(members);
+    const isFirstMember = (countRow?.count ?? 0) === 0;
+
+    // The env bootstrap code is tracked as a normal access_codes row — and it
+    // is retired the moment the House has anyone in it. It can only ever mint
+    // the founding Elder, so a leaked/guessed env value is not a standing
+    // master invite.
     if (isBootstrap) {
+      if (!isFirstMember) {
+        return { ok: false as const, error: BAD_CODE };
+      }
       await tx
         .insert(accessCodes)
-        .values({ code, label: "Bootstrap (env)", maxUses: 1000 })
+        .values({ code, label: "Bootstrap (env)", maxUses: 1 })
         .onConflictDoNothing({ target: accessCodes.code });
     }
 
-    const codeRecord = await tx.query.accessCodes.findFirst({
-      where: eq(accessCodes.code, code),
-    });
+    // Lock the invite row as well: an Elder's revoke uses the same row lock,
+    // so revocation and redemption have one unambiguous commit order.
+    const [codeRecord] = await tx.select().from(accessCodes)
+      .where(eq(accessCodes.code, code)).for("update");
     if (!codeRecord || codeRecord.status !== "active") {
-      return { ok: false as const, error: "Invalid or expired access code" };
+      return { ok: false as const, error: BAD_CODE };
     }
     if (codeRecord.maxUses != null && codeRecord.useCount >= codeRecord.maxUses) {
-      return { ok: false as const, error: "This code has been fully used" };
+      return {
+        ok: false as const,
+        error: "That code has already been used. Ask for a fresh one.",
+      };
     }
     if (codeRecord.expiresAt && new Date(codeRecord.expiresAt) < new Date()) {
-      return { ok: false as const, error: "This code has expired" };
+      return {
+        ok: false as const,
+        error: "That code has expired. Ask for a fresh one.",
+      };
     }
-
-    const memberCount = await tx.select().from(members);
-    const isFirstMember = memberCount.length === 0;
 
     const [newMember] = await tx
       .insert(members)
@@ -175,24 +250,10 @@ export async function completeInitiation(
   });
 
   if (!result.ok) {
+    recordFailedAttempt(attemptKey, CODE_ATTEMPT_WINDOW_MS);
     return { success: false, error: result.error };
   }
 
-  // The proxy gates membership on user_metadata.hoa_member_id — if this fails
-  // the member row exists but the user can't get in. Surface it so the client
-  // retries; the retry hits the existing-member branch above and re-syncs.
-  const { error: syncErr } = await supabase.auth.updateUser({
-    data: {
-      hoa_member_id: result.newMember.id,
-      hoa_role: result.newMember.role,
-    },
-  });
-  if (syncErr) {
-    return {
-      success: false,
-      error: "Could not finish initiation — please try again.",
-    };
-  }
-
+  clearRateLimit(attemptKey);
   return { success: true, data: { memberId: result.newMember.id } };
 }

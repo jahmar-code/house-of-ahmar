@@ -1,0 +1,31 @@
+import type { Metadata } from "next";
+import { getHouseSettings } from "@/lib/settings";
+import { HouseMonogram } from "@/components/shared/house-monogram";
+import { ResetPasswordForm } from "./reset-password-form";
+
+export const metadata: Metadata = {
+  title: "Choose a new password",
+};
+
+export default async function ResetPasswordPage() {
+  const settings = await getHouseSettings();
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="w-full max-w-md space-y-8 px-6">
+        <div className="text-center">
+          <div className="mb-5 flex justify-center">
+            <HouseMonogram houseName={settings.houseName} size="md" />
+          </div>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+            Choose a new password
+          </h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">
+            Almost there. Pick something you&apos;ll remember.
+          </p>
+        </div>
+        <ResetPasswordForm />
+      </div>
+    </div>
+  );
+}

@@ -1,31 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { PostPhotos } from "./post-photos";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { formatDistanceToNow } from "date-fns";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { ActivityTime } from "@/components/shared/activity-time";
 import {
   deletePost,
   toggleReaction,
   addComment,
   togglePostPin,
+  deleteComment,
 } from "@/app/actions/feed";
 import { REACTION_EMOJIS } from "@/lib/constants";
+import { milestoneMeta } from "./milestone-meta";
 import { toast } from "sonner";
 import { MessageCircle, Trash2, Pin, PinOff, Megaphone } from "lucide-react";
-import type { Post, Member, Comment, Reaction } from "@/types";
+import type { Comment, PostWithDetails, PublicMember } from "@/types";
 import type { HoaRole } from "@/lib/constants";
 
 interface PostCardProps {
-  post: Post & {
-    author: Member;
-    comments: (Comment & { author: Member })[];
-    reactions: Reaction[];
-  };
+  // PostWithDetails carries the PublicMember byline projection, so this
+  // component cannot be handed author PII even by accident.
+  post: PostWithDetails;
   currentMemberId: string;
   currentRole: HoaRole;
 }
@@ -34,11 +36,20 @@ export function PostCard({ post, currentMemberId, currentRole }: PostCardProps) 
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  // The comment awaiting confirmation, or null when nothing is pending.
+  const [commentToDelete, setCommentToDelete] = useState<
+    (Comment & { author: PublicMember }) | null
+  >(null);
+  // Which reaction key is mid-flight, so only that pill shows as busy.
+  const [pendingReaction, setPendingReaction] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
   const router = useRouter();
 
   const canDelete =
     post.authorId === currentMemberId || currentRole === "elder";
   const canPin = currentRole === "elder";
+  const milestone = milestoneMeta(post.milestoneKind);
 
   async function handleDelete() {
     const result = await deletePost(post.id);
@@ -46,41 +57,74 @@ export function PostCard({ post, currentMemberId, currentRole }: PostCardProps) 
       toast.success("Post removed");
       router.refresh();
     } else toast.error(result.error);
+    return result.success;
   }
 
-  async function handleTogglePin() {
-    const result = await togglePostPin(post.id);
+  async function handleDeleteComment(commentId: string) {
+    const result = await deleteComment(commentId);
     if (result.success) {
-      toast.success(post.isPinned ? "Post unpinned" : "Post pinned");
+      toast.success("Comment removed");
       router.refresh();
-    } else {
-      toast.error(result.error);
-    }
+    } else toast.error(result.error);
+    return result.success;
   }
 
-  async function handleReaction(emoji: string) {
-    const result = await toggleReaction(post.id, emoji);
-    if (result.success) router.refresh();
-    else toast.error(result.error);
+  function handleTogglePin() {
+    startTransition(async () => {
+      try {
+        const result = await togglePostPin(post.id);
+        if (result.success) {
+          toast.success(post.isPinned ? "Post unpinned" : "Post pinned");
+          router.refresh();
+        } else {
+          toast.error(result.error);
+        }
+      } catch {
+        toast.error("Couldn't update that pin. Please try again.");
+      }
+    });
+  }
+
+  function handleReaction(emoji: string) {
+    // A tap has no visible effect until the action round-trips and the RSC
+    // subtree repaints, so guard against the second tap that always follows.
+    if (pendingReaction) return;
+    setPendingReaction(emoji);
+    startTransition(async () => {
+      try {
+        const result = await toggleReaction(post.id, emoji);
+        if (result.success) router.refresh();
+        else toast.error(result.error);
+      } catch {
+        toast.error("Couldn't update that reaction. Please try again.");
+      } finally {
+        setPendingReaction(null);
+      }
+    });
   }
 
   async function handleComment(e: React.FormEvent) {
     e.preventDefault();
-    if (!commentText.trim()) return;
+    if (!commentText.trim() || submitting) return;
     setSubmitting(true);
 
     const formData = new FormData();
     formData.set("postId", post.id);
     formData.set("content", commentText);
 
-    const result = await addComment(formData);
-    if (result.success) {
-      setCommentText("");
-      router.refresh();
-    } else {
-      toast.error(result.error);
+    try {
+      const result = await addComment(formData);
+      if (result.success) {
+        setCommentText("");
+        router.refresh();
+      } else {
+        toast.error(result.error);
+      }
+    } catch {
+      toast.error("That comment didn't send. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
   }
 
   // Group reactions by emoji
@@ -98,7 +142,9 @@ export function PostCard({ post, currentMemberId, currentRole }: PostCardProps) 
   );
 
   const isAnnouncement = post.type === "announcement";
-  const isHighlighted = isAnnouncement || post.isPinned;
+  const isHighlighted = isAnnouncement || post.isPinned || Boolean(milestone);
+  const mediaUrls = (post.mediaUrls as string[] | null) ?? [];
+  const commentFieldId = `comment-${post.id}`;
 
   return (
     <Card
@@ -111,7 +157,7 @@ export function PostCard({ post, currentMemberId, currentRole }: PostCardProps) 
         <div className="flex items-start justify-between gap-2">
           <div className="flex min-w-0 items-center gap-3">
             <Avatar className="h-10 w-10">
-              <AvatarImage src={post.author.avatarUrl ?? undefined} />
+              <AvatarImage src={post.author.avatarUrl ?? undefined} alt="" />
               <AvatarFallback className="bg-primary/10 text-sm text-primary">
                 {post.author.displayName.charAt(0).toUpperCase()}
               </AvatarFallback>
@@ -130,6 +176,15 @@ export function PostCard({ post, currentMemberId, currentRole }: PostCardProps) 
                     Announcement
                   </Badge>
                 )}
+                {milestone && (
+                  <Badge
+                    variant="outline"
+                    className="gap-1 border-primary/30 bg-primary/10 text-[10px] text-primary"
+                  >
+                    <milestone.Icon className="h-2.5 w-2.5" />
+                    {milestone.label}
+                  </Badge>
+                )}
                 {post.isPinned && (
                   <Badge
                     variant="outline"
@@ -141,20 +196,19 @@ export function PostCard({ post, currentMemberId, currentRole }: PostCardProps) 
                 )}
               </div>
               <span className="text-xs text-muted-foreground">
-                {formatDistanceToNow(new Date(post.createdAt), {
-                  addSuffix: true,
-                })}
+                <ActivityTime value={post.createdAt} />
               </span>
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-0.5">
+          <div className="flex shrink-0 items-center gap-1">
             {canPin && (
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-muted-foreground hover:text-primary"
+                className="size-11 text-muted-foreground hover:text-primary"
                 onClick={handleTogglePin}
+                disabled={pending}
                 aria-label={post.isPinned ? "Unpin post" : "Pin post"}
               >
                 {post.isPinned ? (
@@ -168,9 +222,9 @@ export function PostCard({ post, currentMemberId, currentRole }: PostCardProps) 
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-muted-foreground hover:text-destructive"
-                onClick={handleDelete}
-                aria-label="Remove post"
+                className="size-11 text-muted-foreground hover:text-destructive"
+                onClick={() => setConfirmingDelete(true)}
+                aria-label="Delete post"
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -185,22 +239,8 @@ export function PostCard({ post, currentMemberId, currentRole }: PostCardProps) 
           </p>
         )}
 
-        {/* Media */}
-        {post.mediaUrls && (post.mediaUrls as string[]).length > 0 && (
-          <div
-            className={`mt-3 grid gap-2 ${
-              (post.mediaUrls as string[]).length === 1 ? "" : "grid-cols-2"
-            }`}
-          >
-            {(post.mediaUrls as string[]).map((url, i) => (
-              <img
-                key={i}
-                src={url}
-                alt=""
-                className="max-h-80 w-full rounded-lg border border-border object-cover"
-              />
-            ))}
-          </div>
+        {mediaUrls.length > 0 && (
+          <PostPhotos urls={mediaUrls} authorName={post.author.displayName} />
         )}
 
         {/* Engagement bar */}
@@ -210,14 +250,17 @@ export function PostCard({ post, currentMemberId, currentRole }: PostCardProps) 
             {REACTION_EMOJIS.map(({ key, emoji }) => {
               const count = reactionCounts[key] || 0;
               const isActive = myReactions.has(key);
+              const isBusy = pendingReaction === key;
               return (
                 <button
                   key={key}
                   type="button"
                   onClick={() => handleReaction(key)}
+                  disabled={pendingReaction !== null}
                   aria-pressed={isActive}
+                  aria-busy={isBusy}
                   aria-label={`React ${key}${count > 0 ? `, ${count}` : ""}`}
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-2 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 ${
+                  className={`inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3 py-2 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-60 ${
                     isActive
                       ? "border-primary/40 bg-primary/10 text-foreground"
                       : "border-border bg-muted/40 text-muted-foreground hover:border-foreground/20 hover:text-foreground"
@@ -237,7 +280,7 @@ export function PostCard({ post, currentMemberId, currentRole }: PostCardProps) 
             type="button"
             onClick={() => setShowComments(!showComments)}
             aria-expanded={showComments}
-            className="mt-3 inline-flex items-center gap-1.5 rounded-md py-1 pr-1 text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            className="mt-2 inline-flex min-h-11 items-center gap-1.5 rounded-md pr-2 text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
           >
             <MessageCircle className="h-3.5 w-3.5" />
             {post.comments.length} comment
@@ -247,31 +290,45 @@ export function PostCard({ post, currentMemberId, currentRole }: PostCardProps) 
           {/* Comments section */}
           {showComments && (
             <div className="mt-3 space-y-3 border-t border-border pt-3">
-              {post.comments.map((comment) => (
-                <div key={comment.id} className="flex items-start gap-2.5">
-                  <Avatar className="h-7 w-7">
-                    <AvatarImage src={comment.author.avatarUrl ?? undefined} />
-                    <AvatarFallback className="bg-primary/10 text-[10px] text-primary">
-                      {comment.author.displayName.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-x-2">
-                      <span className="text-xs font-medium text-foreground">
-                        {comment.author.displayName}
-                      </span>
-                      <span className="text-[11px] text-muted-foreground">
-                        {formatDistanceToNow(new Date(comment.createdAt), {
-                          addSuffix: true,
-                        })}
-                      </span>
+              {post.comments.map((comment) => {
+                const canDeleteComment =
+                  comment.authorId === currentMemberId ||
+                  currentRole === "elder";
+                return (
+                  <div key={comment.id} className="flex items-start gap-2.5">
+                    <Avatar className="h-7 w-7 shrink-0">
+                      <AvatarImage src={comment.author.avatarUrl ?? undefined} alt="" />
+                      <AvatarFallback className="bg-primary/10 text-[10px] text-primary">
+                        {comment.author.displayName.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-x-2">
+                        <span className="text-xs font-medium text-foreground">
+                          {comment.author.displayName}
+                        </span>
+                        <span className="text-[11px] text-muted-foreground">
+                          <ActivityTime value={comment.createdAt} />
+                        </span>
+                      </div>
+                      <p className="mt-0.5 text-xs leading-relaxed whitespace-pre-wrap break-words text-foreground/80">
+                        {comment.content}
+                      </p>
                     </div>
-                    <p className="mt-0.5 text-xs leading-relaxed whitespace-pre-wrap break-words text-foreground/80">
-                      {comment.content}
-                    </p>
+                    {canDeleteComment && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-11 shrink-0 text-muted-foreground hover:text-destructive"
+                        onClick={() => setCommentToDelete(comment)}
+                        aria-label={`Delete ${comment.author.displayName}'s comment`}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
               {post.comments.length === 0 && (
                 <p className="text-xs text-muted-foreground">No comments yet.</p>
@@ -282,21 +339,26 @@ export function PostCard({ post, currentMemberId, currentRole }: PostCardProps) 
                   onSubmit={handleComment}
                   className="flex items-center gap-2"
                 >
+                  <label htmlFor={commentFieldId} className="sr-only">
+                    Add a comment to {post.author.displayName}&apos;s post
+                  </label>
                   <Input
+                    id={commentFieldId}
                     type="text"
                     value={commentText}
                     onChange={(e) => setCommentText(e.target.value)}
                     placeholder="Add a comment..."
-                    aria-label="Add a comment"
-                    className="flex-1 bg-muted/40"
+                    maxLength={2000}
+                    disabled={submitting}
+                    className="h-11 flex-1 bg-muted/40 text-base sm:text-sm"
                   />
                   <Button
                     type="submit"
                     variant="secondary"
                     disabled={submitting || !commentText.trim()}
-                    className="shrink-0"
+                    className="h-11 shrink-0"
                   >
-                    Reply
+                    {submitting ? "Sending…" : "Reply"}
                   </Button>
                 </form>
               )}
@@ -304,6 +366,35 @@ export function PostCard({ post, currentMemberId, currentRole }: PostCardProps) 
           )}
         </div>
       </CardContent>
+
+      <ConfirmDialog
+        open={confirmingDelete}
+        onOpenChange={setConfirmingDelete}
+        title="Delete this post?"
+        description="It disappears for everyone, along with its comments and photos. This can't be undone."
+        confirmLabel="Delete"
+        cancelLabel="Keep it"
+        onConfirm={handleDelete}
+      />
+
+      <ConfirmDialog
+        open={commentToDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setCommentToDelete(null);
+        }}
+        title="Delete this comment?"
+        description={
+          commentToDelete
+            ? `${commentToDelete.author.displayName}'s comment disappears for everyone. This can't be undone.`
+            : ""
+        }
+        confirmLabel="Delete"
+        cancelLabel="Keep it"
+        onConfirm={async () => {
+          if (!commentToDelete) return false;
+          return handleDeleteComment(commentToDelete.id);
+        }}
+      />
     </Card>
   );
 }

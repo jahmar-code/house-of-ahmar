@@ -1,0 +1,30 @@
+import { test, expect } from "@playwright/test";
+import { createClient } from "@supabase/supabase-js";
+
+test("recovery token sets a new password and cannot be reused", async ({ page }, testInfo) => {
+  const api = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  if (!["127.0.0.1", "localhost"].includes(new URL(api).hostname)) throw new Error("Local auth only");
+  const admin = createClient(api, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false, autoRefreshToken: false } });
+  const email = `recovery-${testInfo.project.name}-${Date.now()}@house.local`;
+  const result = await admin.auth.admin.createUser({ email, password: process.env.E2E_PASSWORD!, email_confirm: true });
+  expect(result.error).toBeNull();
+  const link = await admin.auth.admin.generateLink({ type: "recovery", email });
+  expect(link.error).toBeNull();
+  const callback = `/auth/confirm?token_hash=${encodeURIComponent(link.data.properties!.hashed_token)}&type=recovery&next=/reset-password`;
+  await page.goto(callback);
+  await expect(page).toHaveURL(/\/reset-password$/);
+  const password = `${process.env.E2E_PASSWORD!}-updated`;
+  await page.getByLabel("New password", { exact: true }).fill(password);
+  await page.getByLabel("Type it again", { exact: true }).fill(`${password}-typo`);
+  await page.getByRole("button", { name: "Save new password", exact: true }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "don't match" })).toBeVisible();
+  await page.getByLabel("Type it again", { exact: true }).fill(password);
+  await page.getByRole("button", { name: "Save new password", exact: true }).click();
+  await expect(page).toHaveURL(/\/initiation$/);
+  const client = createClient(api, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!, { auth: { persistSession: false, autoRefreshToken: false } });
+  const signedIn = await client.auth.signInWithPassword({ email, password });
+  expect(signedIn.error).toBeNull();
+  await client.auth.signOut();
+  await page.goto(callback);
+  await expect(page).toHaveURL(/\/sign-in\?error=confirmation_failed$/);
+});

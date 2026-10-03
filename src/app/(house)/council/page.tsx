@@ -1,14 +1,14 @@
 import { db } from "@/lib/db";
 import { channels } from "@/lib/db/schema";
 import { eq, asc } from "drizzle-orm";
-import { getAuthContext } from "@/lib/auth";
+import { requirePageAuth } from "@/lib/auth";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ChannelList } from "@/components/council/channel-list";
 import { MessageSquare } from "lucide-react";
 
 export default async function CouncilPage() {
-  const ctx = await getAuthContext();
+  const ctx = await requirePageAuth();
   const fetched = await db.query.channels.findMany({
     where: eq(channels.isArchived, false),
     orderBy: asc(channels.sortOrder),
@@ -23,12 +23,12 @@ export default async function CouncilPage() {
       <div>
         <PageHeader
           title="The Council"
-          description="Family discussions and conversations."
+          description="Where the family talks."
         />
         <EmptyState
           icon={MessageSquare}
           title="No chambers yet"
-          description="An Elder must create the first council chamber."
+          description="An Elder will open the first room."
         />
       </div>
     );
@@ -38,7 +38,7 @@ export default async function CouncilPage() {
     <div>
       <PageHeader
         title="The Council"
-        description="Family discussions and conversations."
+        description="Where the family talks."
       />
       <ChannelList channels={allChannels} />
     </div>

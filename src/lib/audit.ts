@@ -1,24 +1,37 @@
 import { db } from "@/lib/db";
 import { auditLogs } from "@/lib/db/schema";
 
-export type AuditAction =
+// Every Elder action that touches the House or another relative's content
+// leaves a row here. Labels live beside the union so the Audit Log page and the
+// action set can never drift apart.
+export const AUDIT_ACTION_LABELS = {
   // Members
-  | "member.role_changed"
-  | "member.deactivated"
-  | "member.reactivated"
+  "member.role_changed": "Member role changed",
+  "member.deactivated": "Member deactivated",
+  "member.reactivated": "Member reactivated",
   // Access codes
-  | "access_code.created"
-  | "access_code.revoked"
-  // Channels
-  | "channel.created"
+  "access_code.created": "Invite created",
+  "access_code.revoked": "Invite revoked",
+  // The Wall
+  "post.pinned": "Post pinned",
+  "post.unpinned": "Post unpinned",
+  "post.deleted_by_elder": "Post removed by an Elder",
+  "comment.deleted_by_elder": "Comment removed by an Elder",
+  // The Council
+  "channel.created": "Chamber created",
+  "channel.renamed": "Chamber renamed",
+  "channel.archived": "Chamber archived",
+  "channel.unarchived": "Chamber reopened",
+  "message.deleted_by_elder": "Message removed by an Elder",
   // House settings
-  | "settings.updated"
+  "settings.updated": "House settings updated",
   // Gatherings
-  | "gathering.cancelled"
-  | "gathering.archived_past"
-  // Family tree
-  | "relationship.added"
-  | "relationship.removed";
+  "gathering.cancelled": "Gathering cancelled",
+  "gathering.uncancelled": "Gathering restored",
+  "gathering.archived_past": "Past gatherings archived",
+} as const;
+
+export type AuditAction = keyof typeof AUDIT_ACTION_LABELS;
 
 export interface AuditEntry {
   actorId: string;
@@ -38,7 +51,9 @@ export async function logAudit(entry: AuditEntry): Promise<void> {
       entityId: entry.entityId ?? null,
       metadata: entry.metadata ?? null,
     });
-  } catch (err) {
-    console.error("[audit] failed to write log entry", { entry, err });
+  } catch {
+    // Never leak access codes, private message previews, or database parameters
+    // into host logs when the best-effort audit sink is unavailable.
+    console.error("[audit] failed to write log entry", { action: entry.action });
   }
 }

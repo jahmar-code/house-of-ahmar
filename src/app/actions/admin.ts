@@ -7,8 +7,17 @@ import { eq } from "drizzle-orm";
 import { requireRole } from "@/lib/auth";
 import { createAccessCodeSchema } from "@/lib/validators";
 import { logAudit } from "@/lib/audit";
+import { z } from "zod";
 import type { ActionResult } from "@/types";
 import crypto from "crypto";
+
+const uuid = z.string().uuid();
+
+// The Elder Council overview counts active codes alongside the codes page.
+const ACCESS_CODE_ROUTES = [
+  "/elder-council/access-codes",
+  "/elder-council",
+] as const;
 
 export async function createAccessCode(
   formData: FormData
@@ -16,17 +25,20 @@ export async function createAccessCode(
   const ctx = await requireRole("elder");
 
   const expiresInDaysRaw = formData.get("expiresInDays");
+  const maxUsesRaw = formData.get("maxUses");
+  // Pass the raw value through — `Number(x) || 1` used to turn "0"/""/"abc"
+  // into a silent single-use code, so Zod's range check never saw them.
   const parsed = createAccessCodeSchema.safeParse({
     label: formData.get("label") || undefined,
-    maxUses: Number(formData.get("maxUses")) || 1,
+    maxUses: maxUsesRaw === null || maxUsesRaw === "" ? undefined : maxUsesRaw,
     expiresInDays: expiresInDaysRaw ? Number(expiresInDaysRaw) : undefined,
   });
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0].message };
   }
 
-  // Generate a random 8-char uppercase code
-  const code = crypto.randomBytes(4).toString("hex").toUpperCase();
+  // 64 bits of entropy; copy/share controls avoid making relatives type it.
+  const code = crypto.randomBytes(8).toString("hex").toUpperCase();
 
   const expiresAt = parsed.data.expiresInDays
     ? new Date(Date.now() + parsed.data.expiresInDays * 86_400_000)
@@ -56,7 +68,7 @@ export async function createAccessCode(
     },
   });
 
-  revalidatePath("/elder-council/access-codes");
+  ACCESS_CODE_ROUTES.forEach((route) => revalidatePath(route));
   return { success: true, data: { code } };
 }
 
@@ -64,6 +76,10 @@ export async function revokeAccessCode(
   codeId: string
 ): Promise<ActionResult> {
   const ctx = await requireRole("elder");
+
+  if (!uuid.safeParse(codeId).success) {
+    return { success: false, error: "Code not found" };
+  }
 
   const target = await db.query.accessCodes.findFirst({
     where: eq(accessCodes.id, codeId),
@@ -83,6 +99,6 @@ export async function revokeAccessCode(
     metadata: { code: target.code, label: target.label },
   });
 
-  revalidatePath("/elder-council/access-codes");
+  ACCESS_CODE_ROUTES.forEach((route) => revalidatePath(route));
   return { success: true };
 }

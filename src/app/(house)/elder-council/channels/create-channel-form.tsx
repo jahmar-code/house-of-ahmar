@@ -17,19 +17,25 @@ export function CreateChannelForm() {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (loading) return;
     setLoading(true);
 
     const form = e.currentTarget;
     const formData = new FormData(form);
-    const result = await createChannel(formData);
-    if (result.success) {
-      toast.success("Chamber created");
-      form.reset();
-      router.refresh();
-    } else {
-      toast.error(result.error);
+    try {
+      const result = await createChannel(formData);
+      if (result.success) {
+        toast.success("Chamber created");
+        form.reset();
+        router.refresh();
+      } else {
+        toast.error(result.error);
+      }
+    } catch {
+      toast.error("Couldn't create that chamber. Please try again.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   return (
@@ -46,7 +52,7 @@ export function CreateChannelForm() {
                 name="name"
                 placeholder="Kitchen Talk, Recipes..."
                 required
-                className="h-10 bg-muted/40 text-sm"
+                className="h-11 bg-muted/40 text-base sm:text-sm"
               />
             </div>
             <div className="space-y-1.5">
@@ -57,7 +63,7 @@ export function CreateChannelForm() {
                 id="type"
                 name="type"
                 defaultValue="general"
-                className="h-10 rounded-lg border border-input bg-muted/40 px-3 text-sm text-foreground transition-colors outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50"
+                className="h-11 rounded-lg border border-input bg-muted/40 px-3 text-base text-foreground sm:text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50"
               >
                 <option value="general">General</option>
                 <option value="announcement">Announcement</option>
@@ -75,12 +81,12 @@ export function CreateChannelForm() {
               name="description"
               rows={2}
               placeholder="What's this chamber for?"
-              className="resize-none bg-muted/40 text-sm"
+              className="resize-none bg-muted/40 text-base sm:text-sm"
             />
           </div>
 
           <div className="flex justify-end">
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} className="h-11">
               <Plus className="mr-1.5 h-3.5 w-3.5" />
               {loading ? "Creating..." : "Create Chamber"}
             </Button>

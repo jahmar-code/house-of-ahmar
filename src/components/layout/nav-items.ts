@@ -1,8 +1,8 @@
 import {
-  LayoutDashboard,
-  Scroll,
-  Calendar,
-  MessageSquare,
+  Home,
+  Newspaper,
+  CalendarHeart,
+  MessagesSquare,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -22,39 +22,43 @@ export interface NavItem {
  * Single source of truth for the primary house navigation. Consumed by the
  * desktop sidebar, the mobile menu sheet, and the mobile bottom tab bar so the
  * three stay in sync.
+ *
+ * These five glyphs are the whole visual identity of the bottom tab bar on a
+ * phone, so they are warm and literal — a home, a paper, a date, a
+ * conversation, people. Every `name` matches the h1 of the page it opens.
  */
 export const NAV_ITEMS: NavItem[] = [
   {
     name: "The Great Hall",
     shortName: "Hall",
     href: "/dashboard",
-    icon: LayoutDashboard,
+    icon: Home,
     inBottomNav: true,
   },
   {
     name: "The Wall",
     shortName: "Wall",
     href: "/feed",
-    icon: Scroll,
+    icon: Newspaper,
     inBottomNav: true,
   },
   {
     name: "Gatherings",
     shortName: "Gather",
     href: "/gatherings",
-    icon: Calendar,
+    icon: CalendarHeart,
     inBottomNav: true,
   },
   {
     name: "The Council",
     shortName: "Council",
     href: "/council",
-    icon: MessageSquare,
+    icon: MessagesSquare,
     inBottomNav: true,
   },
   {
-    name: "Members",
-    shortName: "Members",
+    name: "Our People",
+    shortName: "People",
     href: "/members",
     icon: Users,
     inBottomNav: true,

@@ -6,6 +6,7 @@ import { Dialog as DialogPrimitive } from "@base-ui/react/dialog"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { XIcon } from "lucide-react"
+import { useModalFocusGuardNames } from "@/components/shared/use-modal-focus-guard-names"
 
 function Dialog({ ...props }: DialogPrimitive.Root.Props) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />
@@ -47,6 +48,7 @@ function DialogContent({
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean
 }) {
+  const focusGuardRef = useModalFocusGuardNames()
   return (
     <DialogPortal>
       <DialogOverlay />
@@ -57,6 +59,7 @@ function DialogContent({
           className
         )}
         {...props}
+        ref={focusGuardRef}
       >
         {children}
         {showCloseButton && (

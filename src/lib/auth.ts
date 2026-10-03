@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
 import { members } from "@/lib/db/schema";
@@ -51,5 +52,12 @@ export async function requireRole(minimumRole: HoaRole): Promise<AuthContext> {
   if (ROLE_HIERARCHY[ctx.role] < ROLE_HIERARCHY[minimumRole]) {
     throw new Error("Insufficient permissions");
   }
+  return ctx;
+}
+
+/** Pages must guard their own reads; a cached parent layout is not a boundary. */
+export async function requirePageAuth(): Promise<AuthContext> {
+  const ctx = await getAuthContext();
+  if (!ctx) redirect("/initiation");
   return ctx;
 }

@@ -6,6 +6,7 @@ import { Dialog as SheetPrimitive } from "@base-ui/react/dialog"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { XIcon } from "lucide-react"
+import { useModalFocusGuardNames } from "@/components/shared/use-modal-focus-guard-names"
 
 function Sheet({ ...props }: SheetPrimitive.Root.Props) {
   return <SheetPrimitive.Root data-slot="sheet" {...props} />
@@ -46,6 +47,7 @@ function SheetContent({
   side?: "top" | "right" | "bottom" | "left"
   showCloseButton?: boolean
 }) {
+  const focusGuardRef = useModalFocusGuardNames()
   return (
     <SheetPortal>
       <SheetOverlay />
@@ -57,6 +59,7 @@ function SheetContent({
           className
         )}
         {...props}
+        ref={focusGuardRef}
       >
         {children}
         {showCloseButton && (

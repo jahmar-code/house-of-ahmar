@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { db } from "@/lib/db";
 import { members } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 export async function heartbeat() {
   // Best-effort presence telemetry, fired fire-and-forget every 60s. A transient
@@ -18,7 +18,7 @@ export async function heartbeat() {
     await db
       .update(members)
       .set({ lastSeenAt: new Date() })
-      .where(eq(members.authUserId, user.id));
+      .where(and(eq(members.authUserId, user.id), eq(members.isActive, true)));
   } catch {
     // swallow — presence is non-critical
   }

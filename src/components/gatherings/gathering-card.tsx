@@ -2,9 +2,10 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
-import { Calendar, MapPin, Users } from "lucide-react";
+import { Ban, Calendar, MapPin, Users } from "lucide-react";
+import { GatheringDate } from "@/components/gatherings/gathering-date";
 import type { Gathering, Member, Rsvp } from "@/types";
+import { RSVP_META } from "./rsvp-meta";
 
 interface GatheringCardProps {
   gathering: Gathering & {
@@ -14,9 +15,13 @@ interface GatheringCardProps {
   currentMemberId: string;
 }
 
+
 export function GatheringCard({ gathering, currentMemberId }: GatheringCardProps) {
   const attending = gathering.rsvps.filter((r) => r.status === "attending");
   const myRsvp = gathering.rsvps.find((r) => r.memberId === currentMemberId);
+  const myBadge = myRsvp
+    ? RSVP_META[myRsvp.status]
+    : null;
 
   return (
     <Link
@@ -29,34 +34,38 @@ export function GatheringCard({ gathering, currentMemberId }: GatheringCardProps
             {/* Date block */}
             <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-lg border border-border bg-muted">
               <span className="text-[11px] font-medium uppercase leading-none tracking-wide text-muted-foreground">
-                {format(new Date(gathering.startsAt), "MMM")}
+                <GatheringDate startsAt={gathering.startsAt} isAllDay={gathering.isAllDay} part="month" />
               </span>
               <span className="mt-1 text-xl font-bold leading-none text-foreground tabular-nums">
-                {format(new Date(gathering.startsAt), "d")}
+                <GatheringDate startsAt={gathering.startsAt} isAllDay={gathering.isAllDay} part="day" />
               </span>
             </div>
 
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <h3 className="truncate font-semibold text-foreground">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3
+                  className={`min-w-0 truncate font-semibold text-foreground ${
+                    gathering.isCancelled ? "line-through" : ""
+                  }`}
+                >
                   {gathering.title}
                 </h3>
-                {myRsvp && (
+                {gathering.isCancelled && (
                   <Badge
                     variant="outline"
-                    className={
-                      myRsvp.status === "attending"
-                        ? "border-emerald-500/30 text-emerald-400"
-                        : myRsvp.status === "maybe"
-                          ? "border-amber-500/30 text-amber-400"
-                          : "border-border text-muted-foreground"
-                    }
+                    className="gap-1 border-destructive/40 text-[10px] text-foreground"
                   >
-                    {myRsvp.status === "attending"
-                      ? "Going"
-                      : myRsvp.status === "maybe"
-                        ? "Maybe"
-                        : "Not going"}
+                    <Ban className="h-2.5 w-2.5" />
+                    Cancelled
+                  </Badge>
+                )}
+                {myBadge && !gathering.isCancelled && (
+                  <Badge
+                    variant="outline"
+                    className={`gap-1 ${myBadge.badgeClass}`}
+                  >
+                    <myBadge.Icon className="h-2.5 w-2.5" />
+                    {myBadge.label}
                   </Badge>
                 )}
               </div>
@@ -64,7 +73,7 @@ export function GatheringCard({ gathering, currentMemberId }: GatheringCardProps
               <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1.5">
                   <Calendar className="h-3.5 w-3.5" />
-                  {format(new Date(gathering.startsAt), "EEE, h:mm a")}
+                  <GatheringDate startsAt={gathering.startsAt} endsAt={gathering.endsAt} isAllDay={gathering.isAllDay} style="short" />
                 </span>
                 {gathering.location && (
                   <span className="flex min-w-0 items-center gap-1.5">
@@ -93,9 +102,9 @@ export function GatheringCard({ gathering, currentMemberId }: GatheringCardProps
                       size="sm"
                       className="ring-2 ring-card after:hidden"
                     >
-                      <AvatarImage src={rsvp.member.avatarUrl ?? undefined} />
+                      <AvatarImage src={rsvp.member.avatarUrl ?? undefined} alt={rsvp.member.displayName} />
                       <AvatarFallback className="text-[10px] font-medium">
-                        {rsvp.member.displayName.charAt(0)}
+                        {rsvp.member.displayName.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                   ))}

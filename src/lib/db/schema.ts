@@ -10,8 +10,17 @@ import {
   pgEnum,
   uniqueIndex,
   index,
+  check,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
+import { MILESTONE_KEYS, REACTION_KEYS } from "../constants";
+
+// Closed value sets that are stored as `text` rather than a pgEnum are pinned
+// by a CHECK instead. Kept in step with constants.ts, which is their source of
+// truth, and mirrored in supabase/migrations/0004_integrity.sql.
+const sqlValueList = (values: readonly string[]) =>
+  sql.raw(values.map((v) => `'${v}'`).join(", "));
 
 // Enums
 export const memberRoleEnum = pgEnum("member_role", [
@@ -86,7 +95,15 @@ export const accessCodes = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (table) => [index("access_codes_status_idx").on(table.status)]
+  (table) => [
+    index("access_codes_status_idx").on(table.status),
+    // An invite is the security boundary of this House — the redemption ceiling
+    // is enforced by the database, not only by the app's advisory-lock path.
+    check(
+      "access_codes_use_count_ck",
+      sql`${table.useCount} >= 0 and (${table.maxUses} is null or ${table.useCount} <= ${table.maxUses})`
+    ),
+  ]
 );
 
 // ─── Posts ───
@@ -99,9 +116,11 @@ export const posts = pgTable(
       .references(() => members.id),
     type: postTypeEnum("type").notNull().default("text"),
     content: text("content"),
-    mediaUrls: jsonb("media_urls").$type<string[]>().default([]),
-    isPinned: boolean("is_pinned").default(false),
-    isDeleted: boolean("is_deleted").default(false),
+    mediaUrls: jsonb("media_urls").$type<string[]>().notNull().default([]),
+    // When set, this post celebrates a life milestone (see MILESTONE_KINDS).
+    milestoneKind: text("milestone_kind"),
+    isPinned: boolean("is_pinned").notNull().default(false),
+    isDeleted: boolean("is_deleted").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -112,6 +131,16 @@ export const posts = pgTable(
   (table) => [
     index("posts_author_idx").on(table.authorId),
     index("posts_created_at_idx").on(table.createdAt),
+    // Matches The Wall's only query exactly:
+    //   where is_deleted = false order by is_pinned desc, created_at desc limit 50
+    // posts is the one table here that grows without bound, so it earns the index.
+    index("posts_feed_idx")
+      .on(table.isPinned.desc(), table.createdAt.desc())
+      .where(sql`${table.isDeleted} = false`),
+    check(
+      "posts_milestone_kind_ck",
+      sql`${table.milestoneKind} is null or ${table.milestoneKind} in (${sqlValueList(MILESTONE_KEYS)})`
+    ),
   ]
 );
 
@@ -127,7 +156,7 @@ export const comments = pgTable(
       .notNull()
       .references(() => members.id),
     content: text("content").notNull(),
-    isDeleted: boolean("is_deleted").default(false),
+    isDeleted: boolean("is_deleted").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -155,6 +184,12 @@ export const reactions = pgTable(
       table.memberId,
       table.emoji
     ),
+    // The column is named `emoji` but stores the reaction KEY ("heart") —
+    // constrain it to the six the House offers (REACTION_EMOJIS).
+    check(
+      "reactions_emoji_ck",
+      sql`${table.emoji} in (${sqlValueList(REACTION_KEYS)})`
+    ),
   ]
 );
 
@@ -169,11 +204,11 @@ export const gatherings = pgTable(
     coverImageUrl: text("cover_image_url"),
     startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
     endsAt: timestamp("ends_at", { withTimezone: true }),
-    isAllDay: boolean("is_all_day").default(false),
+    isAllDay: boolean("is_all_day").notNull().default(false),
     createdBy: uuid("created_by")
       .notNull()
       .references(() => members.id),
-    isCancelled: boolean("is_cancelled").default(false),
+    isCancelled: boolean("is_cancelled").notNull().default(false),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -186,6 +221,12 @@ export const gatherings = pgTable(
     index("gatherings_starts_at_idx").on(table.startsAt),
     index("gatherings_created_by_idx").on(table.createdBy),
     index("gatherings_archived_at_idx").on(table.archivedAt),
+    // A gathering cannot end before it begins (gatheringSchema says the same
+    // thing at the boundary, with a friendlier message).
+    check(
+      "gatherings_time_order_ck",
+      sql`${table.endsAt} is null or ${table.endsAt} > ${table.startsAt}`
+    ),
   ]
 );
 
@@ -219,7 +260,7 @@ export const channels = pgTable(
     slug: text("slug").notNull().unique(),
     description: text("description"),
     type: channelTypeEnum("type").notNull().default("general"),
-    isArchived: boolean("is_archived").default(false),
+    isArchived: boolean("is_archived").notNull().default(false),
     sortOrder: integer("sort_order").default(0),
     createdBy: uuid("created_by").references(() => members.id),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -241,9 +282,13 @@ export const messages = pgTable(
       .notNull()
       .references(() => members.id),
     content: text("content").notNull(),
-    mediaUrls: jsonb("media_urls").$type<string[]>().default([]),
-    isDeleted: boolean("is_deleted").default(false),
-    replyToId: uuid("reply_to_id"),
+    mediaUrls: jsonb("media_urls").$type<string[]>().notNull().default([]),
+    isDeleted: boolean("is_deleted").notNull().default(false),
+    // Self-referential thread parent. Declared here so `drizzle-kit push` keeps
+    // the FK instead of dropping the one migration 0001 created.
+    replyToId: uuid("reply_to_id").references((): AnyPgColumn => messages.id, {
+      onDelete: "set null",
+    }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -333,6 +378,10 @@ export const memberRelationships = pgTable(
       table.childId
     ),
     index("member_relationships_child_idx").on(table.childId),
+    check(
+      "member_relationships_no_self_ck",
+      sql`${table.parentId} <> ${table.childId}`
+    ),
   ]
 );
 

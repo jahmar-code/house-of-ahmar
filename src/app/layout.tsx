@@ -1,19 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
-
-// Inter for everything — matches jawaadahmar.com landing-page typography.
-const inter = Inter({
-  variable: "--font-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import "@fontsource-variable/inter";
+import "@fontsource-variable/geist-mono";
 
 // `--font-serif` is intentionally aliased to Inter so the legacy
 // `font-heading` utility still resolves to a real font without pulling in a
@@ -33,7 +23,7 @@ export const metadata: Metadata = {
     template: "%s · House of Ahmar",
   },
   description:
-    "A private home for the House of Ahmar — our people, our gatherings, our story. By initiation only.",
+    "A private home for the House of Ahmar — our people, our gatherings, our story.",
   applicationName: "House of Ahmar",
   appleWebApp: {
     capable: true,
@@ -54,7 +44,7 @@ export const metadata: Metadata = {
     url: "/",
     siteName: "House of Ahmar",
     title: "House of Ahmar",
-    description: "A private home for our family. By initiation only.",
+    description: "A private home for our family.",
     images: [
       { url: "/og-image.png", width: 1200, height: 630, alt: "House of Ahmar" },
     ],
@@ -62,7 +52,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "House of Ahmar",
-    description: "A private home for our family. By initiation only.",
+    description: "A private home for our family.",
     images: ["/og-image.png"],
   },
   // Private space — keep it out of search engines entirely.
@@ -76,6 +66,11 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   themeColor: "#0a0a0a",
   colorScheme: "dark",
+  // Required for `env(safe-area-inset-*)` to return anything but 0px. Without
+  // it the bottom-nav and layout padding that compensate for the iPhone home
+  // indicator are dead code, and the installed PWA (manifest `standalone` +
+  // `black-translucent` status bar) renders the tab bar underneath it.
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -86,8 +81,12 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body
-        className={`${inter.variable} ${inter.className} ${geistMono.variable} antialiased`}
-        style={{ ["--font-serif" as string]: "var(--font-sans)" }}
+        className="font-sans antialiased"
+        style={{
+          ["--font-sans" as string]: '"Inter Variable", sans-serif',
+          ["--font-serif" as string]: '"Inter Variable", sans-serif',
+          ["--font-geist-mono" as string]: '"Geist Mono Variable", monospace',
+        }}
       >
         <TooltipProvider>
           {children}

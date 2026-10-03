@@ -14,20 +14,24 @@ export interface ReplyTarget {
 
 interface CouncilChannelProps {
   initialMessages: MessageWithAuthor[];
+  snapshotAt: string;
   channelId: string;
   channelName: string;
   currentMemberId: string;
   currentRole: HoaRole;
   canPost: boolean;
+  readOnlyReason?: string;
 }
 
 export function CouncilChannel({
   initialMessages,
+  snapshotAt,
   channelId,
   channelName,
   currentMemberId,
   currentRole,
   canPost,
+  readOnlyReason,
 }: CouncilChannelProps) {
   const [replyTarget, setReplyTarget] = useState<ReplyTarget | null>(null);
 
@@ -35,7 +39,9 @@ export function CouncilChannel({
     <>
       <RealtimeMessageList
         initialMessages={initialMessages}
+        snapshotAt={snapshotAt}
         channelId={channelId}
+        channelName={channelName}
         currentMemberId={currentMemberId}
         currentRole={currentRole}
         onReply={canPost ? setReplyTarget : undefined}
@@ -47,6 +53,11 @@ export function CouncilChannel({
           replyTarget={replyTarget}
           onClearReply={() => setReplyTarget(null)}
         />
+      )}
+      {!canPost && (
+        <p className="shrink-0 border-t border-border py-4 text-sm text-muted-foreground">
+          {readOnlyReason ?? "You can read this chamber. Ask an Elder to become a member and join the conversation."}
+        </p>
       )}
     </>
   );

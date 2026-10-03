@@ -27,9 +27,13 @@ export async function updateHouseSettings(
   const entries = Object.entries(parsed.data);
   const now = new Date();
 
-  await Promise.all(
-    entries.map(([key, value]) =>
-      db
+  // The House's identity is ONE aggregate spread over four KV rows — commit it
+  // as one transaction so a pooler hiccup can never leave the landing page and
+  // the Great Hall showing two different Houses. No I/O inside the boundary:
+  // the audit write and the revalidations happen after the commit.
+  await db.transaction(async (tx) => {
+    for (const [key, value] of entries) {
+      await tx
         .insert(houseSettings)
         .values({
           key,
@@ -44,9 +48,9 @@ export async function updateHouseSettings(
             updatedBy: ctx.memberId,
             updatedAt: now,
           },
-        })
-    )
-  );
+        });
+    }
+  });
 
   await logAudit({
     actorId: ctx.memberId,
@@ -55,8 +59,8 @@ export async function updateHouseSettings(
     metadata: { keys: entries.map(([k]) => k) },
   });
 
-  revalidatePath("/elder-council/settings");
-  revalidatePath("/dashboard");
-  revalidatePath("/");
+  // House identity also appears on prerendered sign-in, signup and recovery
+  // pages. Invalidate every descendant of the shared root layout.
+  revalidatePath("/", "layout");
   return { success: true };
 }

@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { accessCodes } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq, gt, isNull, or } from "drizzle-orm";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatsCard } from "@/components/dashboard/stats-card";
 import { Card, CardContent } from "@/components/ui/card";
@@ -27,7 +27,12 @@ export default async function ElderCouncilPage() {
   const [allMembers, activeCodes] = await Promise.all([
     db.query.members.findMany(),
     db.query.accessCodes.findMany({
-      where: eq(accessCodes.status, "active"),
+      // Expiry never flips `status`, so an active-but-lapsed code would be
+      // counted as a live invite the join screen actually refuses.
+      where: and(
+        eq(accessCodes.status, "active"),
+        or(isNull(accessCodes.expiresAt), gt(accessCodes.expiresAt, new Date()))
+      ),
     }),
   ]);
 
@@ -38,41 +43,40 @@ export default async function ElderCouncilPage() {
     {
       href: "/elder-council/members",
       icon: Users,
-      title: "Manage Members",
-      description: "View and manage member roles and access.",
+      title: "Members",
+      description: "Who is in the House, and what each person can do.",
     },
     {
       href: "/elder-council/access-codes",
       icon: Key,
-      title: "Access Codes",
-      description: "Create and manage family invite codes.",
+      title: "Invite Codes",
+      description: "Create and revoke the codes that let family in.",
     },
     {
       href: "/elder-council/channels",
       icon: MessageSquare,
       title: "Council Chambers",
-      description: "Create and manage council chambers.",
+      description: "Open and look after the rooms in the Council.",
     },
     {
       href: "/elder-council/settings",
       icon: Settings,
       title: "House Settings",
-      description: "Configure the House of Ahmar.",
+      description: "The name, the welcome, and the cover photo.",
     },
     {
       href: "/elder-council/audit-log",
       icon: ScrollText,
       title: "Audit Log",
-      description: "Recent administrative actions in the House.",
+      description: "A record of what Elders have changed.",
     },
   ];
 
   return (
     <div>
       <PageHeader
-        eyebrow="Elder Council"
-        title="Administration"
-        description="Governance and stewardship of the House."
+        title="Elder Council"
+        description="Look after the House — invites, roles, chambers and settings."
       />
 
       <section className="mb-8">
@@ -105,7 +109,7 @@ export default async function ElderCouncilPage() {
               href={link.href}
               className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
             >
-              <Card className="h-full border-border bg-card transition-colors hover:border-foreground/20 hover:bg-secondary/20">
+              <Card className="group/card h-full border-border bg-card transition-colors hover:border-foreground/20 hover:bg-secondary/20">
                 <CardContent className="flex items-center gap-4 p-5">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-border bg-muted transition-colors group-hover/card:border-primary/30 group-hover/card:bg-primary/10">
                     <link.icon className="h-5 w-5 text-muted-foreground transition-colors group-hover/card:text-primary" />
