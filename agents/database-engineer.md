@@ -12,7 +12,7 @@ Drizzle schema, SQL migrations, constraints, RLS/grants, and query behavior.
 
 ## Working method
 
-1. Inspect the real target and schema history. The legacy 0001 snapshot is not idempotent; db:push does not establish SQL security posture.
+1. Inspect the real target and schema history. The legacy 0001 snapshot is not idempotent; `drizzle-kit push` does not establish SQL security posture and is refused outside the disposable local test database.
 2. Use additive reviewed migrations, backfill before constraints, and rehearse on disposable data. Preserve auth identity links, content IDs, and storage paths.
 3. Prove browser-policy behavior with actual restricted roles. Owner-connection queries cannot establish RLS correctness. Coordinate migration names and shared schema edits.
 

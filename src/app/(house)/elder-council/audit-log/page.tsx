@@ -3,6 +3,8 @@ import { requireRole } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { auditLogs } from "@/lib/db/schema";
 import { AUDIT_ACTION_LABELS } from "@/lib/audit";
+import { summarizeAuditEntry } from "@/lib/audit-summary";
+import { PUBLIC_MEMBER_COLUMNS } from "@/types";
 import { desc } from "drizzle-orm";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -11,43 +13,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ScrollText } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
-
-
-function summarizeMetadata(
-  action: string,
-  metadata: unknown
-): string | null {
-  if (!metadata || typeof metadata !== "object") return null;
-  const m = metadata as Record<string, unknown>;
-
-  switch (action) {
-    case "member.role_changed":
-      return `${m.displayName ?? "—"}: ${m.from} → ${m.to}`;
-    case "member.deactivated":
-    case "member.reactivated":
-      return (m.displayName as string) ?? null;
-    case "access_code.created":
-      return `${m.code ?? "—"}${m.label ? ` · ${m.label}` : ""} (${m.maxUses} uses)`;
-    case "access_code.revoked":
-      return `${m.code ?? "—"}${m.label ? ` · ${m.label}` : ""}`;
-    case "channel.created":
-      return `#${m.slug ?? m.name ?? "—"}`;
-    case "settings.updated":
-      if (Array.isArray(m.keys)) return (m.keys as string[]).join(", ");
-      return null;
-    case "gathering.cancelled":
-      return (m.title as string) ?? null;
-    case "gathering.archived_past":
-      return `${m.count ?? 0} archived (older than ${m.thresholdDays ?? 7} days)`;
-    case "relationship.added":
-    case "relationship.removed":
-      if (m.parentName && m.childName)
-        return `${m.parentName} → ${m.childName}`;
-      return null;
-    default:
-      return null;
-  }
-}
 
 export default async function AuditLogPage() {
   try {
@@ -59,7 +24,8 @@ export default async function AuditLogPage() {
   const entries = await db.query.auditLogs.findMany({
     orderBy: desc(auditLogs.createdAt),
     limit: 200,
-    with: { actor: true },
+    // Byline only: the trail needs a name and face, not the actor's contact row.
+    with: { actor: { columns: PUBLIC_MEMBER_COLUMNS } },
   });
 
   return (
@@ -82,7 +48,7 @@ export default async function AuditLogPage() {
             const label =
               (AUDIT_ACTION_LABELS as Record<string, string>)[entry.action] ??
               entry.action;
-            const summary = summarizeMetadata(entry.action, entry.metadata);
+            const summary = summarizeAuditEntry(entry.action, entry.metadata, entry.entityId);
             const date = new Date(entry.createdAt);
             return (
               <Card

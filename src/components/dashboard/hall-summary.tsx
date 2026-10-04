@@ -1,7 +1,7 @@
 import { CalendarHeart } from "lucide-react";
-import { differenceInCalendarDays, format, startOfToday } from "date-fns";
+import { differenceInCalendarDays, startOfToday } from "date-fns";
 import type { Gathering, Member } from "@/types";
-import { calendarDate } from "@/components/gatherings/calendar-date";
+import { GatheringDayPhrase } from "@/components/gatherings/gathering-date";
 
 interface HallSummaryProps {
   members: Member[];
@@ -50,23 +50,7 @@ export function HallSummary({ members, gatherings }: HallSummaryProps) {
     );
   }
 
-  if (nextGathering) {
-    const startsAt = nextGathering.isAllDay ? calendarDate(nextGathering.startsAt) : new Date(nextGathering.startsAt);
-    const daysAway = differenceInCalendarDays(startsAt, today);
-    const when =
-      daysAway < 0
-        ? "is happening now"
-        : daysAway === 0
-        ? "is today"
-        : daysAway === 1
-          ? "is tomorrow"
-          : daysAway <= 6
-            ? `is on ${format(startsAt, "EEEE")}`
-            : `is on ${format(startsAt, "MMM d")}`;
-    parts.push(`${nextGathering.title} ${when}`);
-  }
-
-  if (parts.length === 0) return null;
+  if (parts.length === 0 && !nextGathering) return null;
 
   return (
     <p className="mb-6 flex items-start gap-2.5 text-sm text-foreground">
@@ -74,7 +58,17 @@ export function HallSummary({ members, gatherings }: HallSummaryProps) {
         className="mt-0.5 h-4 w-4 shrink-0 text-primary"
         aria-hidden="true"
       />
-      <span>{parts.join(" · ")}</span>
+      <span>
+        {parts.join(" · ")}
+        {nextGathering && (
+          <>
+            {parts.length > 0 && " · "}
+            {/* The day is the viewer's, like every other gathering surface. */}
+            {nextGathering.title}{" "}
+            <GatheringDayPhrase startsAt={nextGathering.startsAt} endsAt={nextGathering.endsAt} isAllDay={nextGathering.isAllDay} />
+          </>
+        )}
+      </span>
     </p>
   );
 }

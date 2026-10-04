@@ -8,23 +8,29 @@ if (!process.env.DATABASE_URL) {
 }
 
 /**
- * How this project applies schema changes — read this before running anything.
+ * Schema changes reach a database only as reviewed SQL in supabase/migrations/,
+ * applied in order — see docs/pkm/50-operations/migration-runbook.md.
  *
- * `npm run db:push` (drizzle-kit push) is the real workflow: it diffs
- * `schema.ts` against the live database and applies the difference. Everything
- * Drizzle cannot express — the two SQL-only foreign keys, RLS, grants, CHECK
- * constraints, seeds — lives in HAND-WRITTEN, hand-numbered files under
- * `supabase/migrations/` (CLAUDE.md Critical rule #3).
- *
- * `out` therefore points at `./drizzle`, a folder drizzle-kit owns outright.
- * It used to point at `supabase/migrations/`, where a single `db:generate`
- * would have dropped a `0000_*.sql` and a `meta/_journal.json` in among the
- * curated files and left two incompatible numbering schemes in the one folder
- * that is the recovery path for the family's data.
- *
- * `npm run db:generate` is kept only for inspecting what a change would emit.
- * Nothing reads `./drizzle` — do not start applying from it.
+ * - `npm run db:generate` writes Drizzle's proposed SQL to `./drizzle` for
+ *   inspection only. Nothing applies from that folder; turn reviewed statements
+ *   into a new timestamped migration (with any RLS, grants and backfills).
+ * - `drizzle-kit push` / `migrate` would change a database directly and know
+ *   nothing of RLS, grants, Storage policies or Realtime. They are refused below
+ *   unless DATABASE_URL is the disposable local test database. There is no npm
+ *   script for them on purpose.
+ * - `npm run db:studio` opens the configured database for reading AND writing.
  */
+const DIRECT_WRITES = ["push", "migrate", "drop", "up"];
+if (process.argv.some((arg) => DIRECT_WRITES.includes(arg))) {
+  const target = new URL(process.env.DATABASE_URL);
+  if (!["127.0.0.1", "localhost", "[::1]"].includes(target.hostname) || target.port !== "55322") {
+    throw new Error(
+      "drizzle-kit push/migrate are limited to the disposable local test database (port 55322). " +
+        "Apply reviewed SQL with the migration runbook instead."
+    );
+  }
+}
+
 export default defineConfig({
   schema: "./src/lib/db/schema.ts",
   out: "./drizzle",

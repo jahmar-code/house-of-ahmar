@@ -30,7 +30,7 @@ vi.mock("@/lib/db", () => {
         return [state.member];
       },
     }) }),
-    update: () => ({ set: () => ({ where: async () => { state.redemptions++; } }) }),
+    update: () => ({ set: () => ({ where: () => ({ returning: async () => { state.redemptions++; return [{ id: "invite" }]; } }) }) }),
     transaction: async (fn: (tx: unknown) => unknown) => {
       const turn = state.queue.then(() => fn(db));
       state.queue = turn.then(() => undefined, () => undefined);

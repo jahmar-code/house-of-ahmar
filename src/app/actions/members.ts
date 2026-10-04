@@ -119,15 +119,11 @@ async function changeMember(memberId: string, change: MemberChange): Promise<Act
   if (!result.success) return result;
 
   if (result.changed) {
-    await logAudit({
-      actorId: ctx.memberId,
-      action: "role" in change ? "member.role_changed" : change.isActive ? "member.reactivated" : "member.deactivated",
-      entityType: "member",
-      entityId: memberId,
-      metadata: "role" in change
-        ? { from: result.target.role, to: change.role, displayName: result.target.displayName }
-        : { displayName: result.target.displayName },
-    });
+    const record = { actorId: ctx.memberId, entityType: "member", entityId: memberId };
+    const { displayName } = result.target;
+    await logAudit("role" in change
+      ? { ...record, action: "member.role_changed", metadata: { from: result.target.role, to: change.role, displayName } }
+      : { ...record, action: change.isActive ? "member.reactivated" : "member.deactivated", metadata: { displayName } });
   }
   revalidatePath("/", "layout");
   return { success: true };

@@ -33,4 +33,4 @@ The House gives one family a private, welcoming place to stay connected. Start w
 
 [Local setup](50-operations/local-setup.md) · [Migrations](50-operations/migration-runbook.md) · [Backup and recovery](50-operations/backup-and-recovery.md) · [Testing strategy](50-operations/testing-strategy.md) · [Release runbook](50-operations/release-runbook.md) · [AI development process](50-operations/ai-development-process.md) · [Troubleshooting](50-operations/troubleshooting.md) · [Known limits](50-operations/known-limitations.md)
 
-[Documentation conventions](README.md) explain source provenance. [Dated audit evidence](../audits/2026-10-03/README.md) records what was executed and what remains unverified.
+[Documentation conventions](README.md) explain source provenance. [Dated audit evidence](../audits/2026-10-03/README.md) and its [follow-up audit](../audits/2026-10-03-follow-up/README.md) record what was executed, the findings, and what remains unverified.

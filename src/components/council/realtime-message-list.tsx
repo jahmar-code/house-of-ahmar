@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { ArrowDown, MessagesSquare, WifiOff } from "lucide-react";
-import { deleteMessage, loadOlderMessages } from "@/app/actions/council";
+import { deleteMessage, findRemovedMessages, loadOlderMessages } from "@/app/actions/council";
+import { LOADED_HISTORY_CHECK_LIMIT } from "@/lib/constants";
 import { toast } from "sonner";
 import { MessageRow } from "./message-row";
 import {
@@ -30,6 +31,8 @@ interface RealtimeMessageListProps {
   currentMemberId: string;
   currentRole: HoaRole;
   onReply?: (target: ReplyTarget) => void;
+  /** Messages just removed from view, so a pending reply to one can be dropped. */
+  onRemoved?: (ids: ReadonlySet<string>) => void;
 }
 
 /** How close to the bottom still counts as "reading the newest". */
@@ -38,6 +41,8 @@ const NEAR_BOTTOM_PX = 120;
 const REFRESH_THROTTLE_MS = 5000;
 /** If the chamber hasn't joined by now, say so rather than imply it's live. */
 const CONNECT_GRACE_MS = 6000;
+/** The server snapshot holds the newest rows only; older loaded rows need a check. */
+const SNAPSHOT_SIZE = 100;
 
 export function RealtimeMessageList({
   initialMessages,
@@ -47,6 +52,7 @@ export function RealtimeMessageList({
   currentMemberId,
   currentRole,
   onReply,
+  onRemoved,
 }: RealtimeMessageListProps) {
   const router = useRouter();
   const [messages, setMessages] =
@@ -97,6 +103,57 @@ export function RealtimeMessageList({
     lastRefreshRef.current = now;
     router.refresh();
   }, [router]);
+
+  // The newest-100 snapshot cannot vouch for older loaded rows, so a deletion
+  // missed while disconnected would survive every refresh. After a reconnect or
+  // a return to the tab, ask which loaded rows are no longer live and drop only
+  // those — valid history and the reader's position stay put.
+  const verifyingRef = useRef(false);
+  const rerunVerifyRef = useRef(false);
+  const lastVerifyRef = useRef(0);
+  // Set once "Load earlier" adds history, or once live arrivals push loaded
+  // rows out of the newest-100 window the snapshot can vouch for.
+  const olderLoadedRef = useRef(false);
+  const onRemovedRef = useRef(onRemoved);
+  useEffect(() => {
+    onRemovedRef.current = onRemoved;
+  }, [onRemoved]);
+  const verifyLoadedHistory = useCallback(async (force = false): Promise<void> => {
+    const loaded = messagesRef.current;
+    if (!olderLoadedRef.current && loaded.length <= SNAPSHOT_SIZE) return;
+    if (verifyingRef.current) {
+      // A recovery during an in-flight check must not be dropped.
+      if (force) rerunVerifyRef.current = true;
+      return;
+    }
+    const now = Date.now();
+    if (!force && now - lastVerifyRef.current < REFRESH_THROTTLE_MS) return;
+    lastVerifyRef.current = now;
+    verifyingRef.current = true;
+    try {
+      const ids = loaded.map((m) => m.id);
+      const removed = new Set<string>();
+      for (let start = 0; start < ids.length; start += LOADED_HISTORY_CHECK_LIMIT) {
+        const result = await findRemovedMessages(channelId, ids.slice(start, start + LOADED_HISTORY_CHECK_LIMIT));
+        // Keep what is shown; the next recovery tries again.
+        if (!result.success || !result.data) return;
+        result.data.removed.forEach((id) => removed.add(id));
+      }
+      if (removed.size === 0) return;
+      removed.forEach((id) => deletedIdsRef.current.add(id));
+      setDeletedIds((prev) => new Set([...prev, ...removed]));
+      setMessages((prev) => prev.filter((m) => !removed.has(m.id)));
+      onRemovedRef.current?.(removed);
+    } catch {
+      // A failed check changes nothing on screen.
+    } finally {
+      verifyingRef.current = false;
+      if (rerunVerifyRef.current) {
+        rerunVerifyRef.current = false;
+        void verifyLoadedHistory(true);
+      }
+    }
+  }, [channelId]);
 
   // The ScrollArea viewport is the scroll container — track how far from the
   // bottom the reader is so we never yank them away from what they're reading.
@@ -245,6 +302,7 @@ export function RealtimeMessageList({
             prev.has(updated.id) ? prev : new Set(prev).add(updated.id)
           );
           setMessages((prev) => prev.filter((m) => m.id !== updated.id));
+          onRemovedRef.current?.(new Set([updated.id]));
         }
       )
       .on("system", {}, (payload: { extension?: string; status?: string }) => {
@@ -257,6 +315,7 @@ export function RealtimeMessageList({
           // Database readiness can follow SUBSCRIBED within the throttle
           // window. Always close that gap, including after stream recovery.
           pullLatest(true);
+          void verifyLoadedHistory(true);
         }
       });
 
@@ -275,6 +334,7 @@ export function RealtimeMessageList({
             // away — a locked phone must not miss part of the conversation.
             // Also close the gap between the initial page query and subscribing.
             pullLatest();
+            void verifyLoadedHistory();
           } else if (
             status === "CHANNEL_ERROR" ||
             status === "TIMED_OUT" ||
@@ -293,7 +353,7 @@ export function RealtimeMessageList({
       cancelled = true;
       supabase.removeChannel(channel);
     };
-  }, [channelId, pullLatest]);
+  }, [channelId, pullLatest, verifyLoadedHistory]);
 
   // A channel that never joins should say so rather than sit on stale history.
   useEffect(() => {
@@ -304,12 +364,15 @@ export function RealtimeMessageList({
 
   useEffect(() => {
     function handleVisibility() {
-      if (document.visibilityState === "visible") pullLatest();
+      if (document.visibilityState === "visible") {
+        pullLatest();
+        void verifyLoadedHistory();
+      }
     }
     document.addEventListener("visibilitychange", handleVisibility);
     return () =>
       document.removeEventListener("visibilitychange", handleVisibility);
-  }, [pullLatest]);
+  }, [pullLatest, verifyLoadedHistory]);
 
   async function handleLoadEarlier() {
     if (loadingHistory || !messages[0]) return;
@@ -324,6 +387,7 @@ export function RealtimeMessageList({
       const viewport = viewportRef.current;
       if (viewport) historyScrollRef.current = { height: viewport.scrollHeight, top: viewport.scrollTop };
       const older = result.data.messages;
+      if (older.length > 0) olderLoadedRef.current = true;
       setMessages((current) => {
         const ids = new Set(current.map((message) => message.id));
         return [...older.filter((message) => !ids.has(message.id)), ...current];
@@ -346,6 +410,7 @@ export function RealtimeMessageList({
         setDeletedIds((prev) => new Set(prev).add(target.id));
         // Optimistic remove — realtime will also fire
         setMessages((prev) => prev.filter((m) => m.id !== target.id));
+        onRemovedRef.current?.(new Set([target.id]));
       } else {
         toast.error(result.error);
       }

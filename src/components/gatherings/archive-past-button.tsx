@@ -43,7 +43,7 @@ export function ArchivePastButton() {
         open={confirming}
         onOpenChange={setConfirming}
         title="Tidy away older gatherings?"
-        description="Everything that started more than 7 days ago moves out of the list. Nothing is deleted — the pages and RSVPs stay exactly as they are."
+        description="Everything that ended more than 7 days ago moves out of the list. Nothing is deleted — the pages and RSVPs stay exactly as they are."
         confirmLabel="Tidy them away"
         cancelLabel="Not now"
         destructive={false}

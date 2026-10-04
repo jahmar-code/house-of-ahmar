@@ -58,6 +58,8 @@ const dbMock = vi.hoisted(() => {
         return { where: vi.fn(() => step(undefined)) };
       }),
     })),
+    liveRows: [] as { id: string }[],
+    select: vi.fn(() => ({ from: () => ({ where: async () => dbMock.liveRows }) })),
     query: {
       channels: { findFirst: vi.fn() },
       messages: { findFirst: vi.fn() },
@@ -67,7 +69,7 @@ const dbMock = vi.hoisted(() => {
 
 vi.mock("@/lib/db", () => ({ db: dbMock }));
 
-const { sendMessage, deleteMessage, archiveChannel, renameChannel } =
+const { sendMessage, deleteMessage, archiveChannel, renameChannel, findRemovedMessages } =
   await import("./council");
 
 const CHANNEL_ID = "f47ac10b-58cc-4372-a567-0e02b2c3d479";
@@ -305,5 +307,32 @@ describe("chamber administration", () => {
         metadata: { from: "General", to: "Cousins" },
       })
     );
+  });
+});
+
+describe("findRemovedMessages (recovery tombstone check)", () => {
+  const OLDER = "2b1c3d4e-5f60-4a7b-8c9d-0e1f2a3b4c5d";
+
+  it("reports loaded messages that are no longer live", async () => {
+    dbMock.query.channels.findFirst.mockResolvedValue(openChamber());
+    dbMock.liveRows = [{ id: MESSAGE_ID }];
+    const result = await findRemovedMessages(CHANNEL_ID, [MESSAGE_ID, OLDER]);
+    expect(result).toEqual({ success: true, data: { removed: [OLDER] } });
+  });
+
+  it("applies the chamber's read rules", async () => {
+    dbMock.query.channels.findFirst.mockResolvedValue(openChamber({ type: "private" }));
+    expect(await findRemovedMessages(CHANNEL_ID, [MESSAGE_ID])).toEqual({ success: false, error: "Chamber not found" });
+    dbMock.query.channels.findFirst.mockResolvedValue(openChamber({ isArchived: true }));
+    expect((await findRemovedMessages(CHANNEL_ID, [MESSAGE_ID])).success).toBe(false);
+    expect(dbMock.select).not.toHaveBeenCalled();
+  });
+
+  it("refuses unbounded or malformed checks before reading", async () => {
+    dbMock.query.channels.findFirst.mockResolvedValue(openChamber());
+    expect((await findRemovedMessages(CHANNEL_ID, Array(501).fill(MESSAGE_ID))).success).toBe(false);
+    expect((await findRemovedMessages(CHANNEL_ID, ["not-a-uuid"])).success).toBe(false);
+    expect((await findRemovedMessages(CHANNEL_ID, "nope" as never)).success).toBe(false);
+    expect(dbMock.query.channels.findFirst).not.toHaveBeenCalled();
   });
 });

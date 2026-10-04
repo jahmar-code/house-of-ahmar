@@ -6,6 +6,7 @@ source:
   - .env.example
   - drizzle.config.ts
   - supabase/migrations
+  - supabase/migrations/20261003200000_operation_aware_media.sql
   - scripts/enable-realtime.mjs
   - src/app/actions/onboarding.ts
   - src/app/auth/confirm/route.ts
@@ -28,9 +29,9 @@ Fill required values using [the environment reference](../40-reference/environme
 
 ## Prepare Supabase
 
-1. Follow [migration ordering](migration-runbook.md). For a fresh empty project, run the complete migration chain in order; the final additive migration reconciles the historical baseline to the current app. Do not run Drizzle first or replay the legacy `0001` snapshot over an existing schema.
+1. Follow [migration ordering](migration-runbook.md). For a fresh empty project, run the complete migration chain in order; `20261003175118` reconciles the historical baseline to the current app and `20261003200000` then narrows which Storage operations browser sessions may use. Do not run Drizzle first or replay the legacy `0001` snapshot over an existing schema; `drizzle.config.ts` refuses `drizzle-kit push`/`migrate` except on the disposable test database.
 2. Configure Realtime publication using the migration/setup mechanism or `node scripts/enable-realtime.mjs`; verify a real subscription later.
-3. Provision the private media bucket and membership/ownership policies from the current hardening migration. A bucket name alone is not a usable upload policy.
+3. Provision the private media buckets and membership/ownership policies from the hardening migrations, including the operation-aware Storage guards in `20261003200000_operation_aware_media.sql`, which needs Storage's operation helpers. A bucket name alone is not a usable upload policy.
 4. Set Auth Site URL and allowed Redirect URLs for `/auth/confirm` on the chosen origin. Keep email confirmation enabled for real users. If using a disposable local mail catcher, record that email delivery was only simulated.
 5. Confirm email templates generate the supported callback shape (`code` exchange or `token_hash` and `type`), including recovery destination. Test sign-up confirmation and forgot-password separately.
 

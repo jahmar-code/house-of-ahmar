@@ -8,6 +8,9 @@ source:
   - src/lib
   - supabase/migrations
   - scripts
+  - src/test
+  - tests
+  - supabase/operations
   - agents
   - AGENTS.md
 verified: 2026-10-03
@@ -27,13 +30,15 @@ tags: [repository, overview]
 | `src/components/{dashboard,feed,gatherings,council,members}` | Domain UI |
 | `src/components/layout` | Responsive navigation and presence |
 | `src/components/shared`, `ui` | Shared patterns and Base UI primitives |
-| `src/lib/auth.ts`, `env.ts`, `settings.ts`, `audit.ts` | Cross-cutting contracts |
+| `src/lib/auth.ts`, `env.ts`, `settings.ts`, `audit.ts`, `audit-summary.ts` | Cross-cutting contracts |
 | `src/lib/supabase` | Server/browser clients, session refresh, and upload helpers |
 | `src/lib/db` | Drizzle connection and schema |
 | `src/lib/validators.ts`, `constants.ts`, `src/types/index.ts` | Input, closed sets, and shared result/projection types |
 | `src/proxy.ts`, `next.config.ts` | Route/session perimeter, image allow-list, headers |
 | `supabase/migrations` | SQL security/integrity history; see migration runbook before executing |
-| `scripts` | Backup, realtime setup, diagnostics, seeds, and verification support |
+| `supabase/operations` | Operator-run, reviewed SQL that is deliberately not a migration; owner approval and a backup first |
+| `scripts` | Backup and restore, realtime setup, diagnostics, seeds, disposable-stack and verification support |
+| `tests/e2e`, `tests/integration`, `src/test` | Browser journeys, real SQL/Storage policy checks, and real-PostgreSQL fixtures for `*.database.test.ts` |
 | `agents`, `AGENTS.md` | Role doctrine and development routing |
 | `docs/pkm`, `docs/audits` | Current knowledge and dated execution evidence |
 

@@ -24,7 +24,8 @@ export default async function EditGatheringPage({
   });
   if (!gathering) notFound();
 
-  if (gathering.createdBy !== ctx.memberId && ctx.role !== "elder") {
+  // Guests are read-only even on gatherings they created before a role change.
+  if (ctx.role === "guest" || (gathering.createdBy !== ctx.memberId && ctx.role !== "elder")) {
     redirect(`/gatherings/${id}`);
   }
 

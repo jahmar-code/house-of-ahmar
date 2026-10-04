@@ -15,6 +15,7 @@ import {
   startOfToday,
 } from "date-fns";
 import { PRESENCE_TIMEOUT_MS } from "@/lib/constants";
+import { GatheringDate } from "@/components/gatherings/gathering-date";
 import {
   ArrowLeft,
   Cake,
@@ -124,11 +125,12 @@ export default async function MemberProfilePage({
               </AvatarFallback>
             </Avatar>
 
-            <h1 className="mt-4 font-heading text-2xl font-bold tracking-tight text-foreground">
+            {/* Valid names and bios can be one long word or link: wrap, never clip. */}
+            <h1 className="mt-4 max-w-full font-heading text-2xl font-bold tracking-tight text-foreground wrap-anywhere">
               {member.displayName}
             </h1>
             {member.fullName && member.fullName !== member.displayName && (
-              <p className="text-sm text-muted-foreground">{member.fullName}</p>
+              <p className="max-w-full text-sm text-muted-foreground wrap-anywhere">{member.fullName}</p>
             )}
 
             <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
@@ -153,7 +155,7 @@ export default async function MemberProfilePage({
             </div>
 
             {member.bio && (
-              <p className="mt-4 max-w-md text-sm text-foreground/80">
+              <p className="mt-4 w-full max-w-md text-sm text-foreground/80 wrap-anywhere">
                 {member.bio}
               </p>
             )}
@@ -197,7 +199,7 @@ export default async function MemberProfilePage({
                 <Mail className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <a
                   href={`mailto:${member.email}`}
-                  className="min-w-0 truncate rounded-lg text-foreground underline underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                  className="min-w-0 rounded-lg text-foreground underline underline-offset-4 wrap-anywhere hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
                 >
                   {member.email}
                 </a>
@@ -226,7 +228,7 @@ export default async function MemberProfilePage({
         </CardHeader>
         <CardContent>
           {recentPosts.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground wrap-anywhere">
               {isSelf
                 ? "You haven't written on The Wall yet."
                 : `${member.displayName} hasn't written on The Wall yet.`}
@@ -239,7 +241,7 @@ export default async function MemberProfilePage({
                   href="/feed"
                   className="block rounded-lg border border-border bg-secondary/20 p-3 transition-colors hover:border-foreground/20 hover:bg-secondary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
                 >
-                  <p className="text-sm text-foreground/80 line-clamp-2">
+                  <p className="text-sm text-foreground/80 line-clamp-2 wrap-anywhere">
                     {post.content}
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
@@ -262,7 +264,7 @@ export default async function MemberProfilePage({
         </CardHeader>
         <CardContent>
           {upcoming.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground wrap-anywhere">
               {isSelf
                 ? "You're not down for any gatherings yet."
                 : `${member.displayName} isn't down for any gatherings yet.`}
@@ -280,8 +282,9 @@ export default async function MemberProfilePage({
                     <p className="truncate text-sm font-medium text-foreground">
                       {gathering.title}
                     </p>
+                    {/* The viewer's calendar, like every other gathering surface. */}
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                      {format(new Date(gathering.startsAt), "EEEE, MMMM d")}
+                      <GatheringDate startsAt={gathering.startsAt} isAllDay={gathering.isAllDay} style="date" />
                     </p>
                   </div>
                 </Link>

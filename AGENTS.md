@@ -21,7 +21,7 @@ Build a calm, private home for one inclusive family. Read [product vision](docs/
 - Limit browser member projections to what the surface needs. Contact details, auth IDs, invite codes, message text, and credentials must not leak through logs or diagnostic artifacts.
 - Media and realtime access must match active membership, including deactivation. Test direct URLs and Data API access, not just navigation.
 - Neutral dark surfaces, orange accent, Inter/system sans, Lucide icons, and the fixed reaction set. Use semantic tokens. Preserve visible focus, contrast, reduced motion, safe areas, keyboard operation, and mobile composer access.
-- Follow [migration safety](docs/pkm/50-operations/migration-runbook.md); never blindly run `db:push` or legacy SQL against existing family data.
+- Follow [migration safety](docs/pkm/50-operations/migration-runbook.md); never run `drizzle-kit push` or legacy SQL against existing family data; `drizzle.config.ts` refuses direct pushes except to the disposable local test database.
 
 ## Quality and documentation gates
 

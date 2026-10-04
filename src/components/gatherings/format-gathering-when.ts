@@ -1,6 +1,11 @@
 import { format, isSameDay } from "date-fns";
 import { calendarDate } from "./calendar-date";
 
+/** The viewer's calendar day for a gathering: local for timed, stored for all-day. */
+export function formatGatheringDay(startsAt: Date | string, isAllDay: boolean | null): string {
+  return format(isAllDay ? calendarDate(startsAt) : new Date(startsAt), "EEEE, MMMM d");
+}
+
 /**
  * One place that turns a gathering's start/end/all-day trio into words.
  *

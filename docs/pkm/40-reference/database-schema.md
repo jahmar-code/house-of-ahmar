@@ -5,6 +5,8 @@ source:
   - src/lib/db/schema.ts
   - src/types/index.ts
   - src/lib/constants.ts
+  - src/lib/audit.ts
+  - drizzle.config.ts
   - supabase/migrations
 verified: 2026-10-03
 tags: [reference, database]
@@ -26,7 +28,7 @@ tags: [reference, database]
 | `channels` | Name, stable unique slug, type, archive flag, sort order |
 | `messages` | Channel, author, content, soft deletion, optional self-referencing reply |
 | `house_settings` | Key/value identity settings and updater |
-| `audit_logs` | Actor/action/entity/metadata/timestamp for administrative history |
+| `audit_logs` | Actor/action/entity/timestamp plus per-action allow-listed metadata (`AUDIT_METADATA_KEYS`) for administrative history |
 | `member_relationships` | Retained parent/child links; no current family-tree UI |
 | `albums`, `photos` | Retained media archive structure; no current Archives UI |
 
@@ -40,6 +42,6 @@ Unique constraints support idempotent/atomic operations, including RSVP upsert, 
 
 ## Provisioning
 
-Use the [migration runbook](../50-operations/migration-runbook.md). `0001` is a historical snapshot, not the complete current model or a repeatable bootstrap command. Do not assume `db:push` applies RLS, browser grants, Storage policies, default chambers, or Realtime publication.
+Use the [migration runbook](../50-operations/migration-runbook.md). `0001` is a historical snapshot, not the complete current model or a repeatable bootstrap command. Drizzle tooling never provisions RLS, browser grants, Storage policies, default chambers, or Realtime publication; there is no push script, and `drizzle.config.ts` refuses `drizzle-kit push`/`migrate` outside the disposable local test database.
 
 Inspect live schema and constraints separately from the local files when verifying a release. No statement in this note proves a remote migration was applied.

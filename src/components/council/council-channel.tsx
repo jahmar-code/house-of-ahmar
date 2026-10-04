@@ -45,6 +45,7 @@ export function CouncilChannel({
         currentMemberId={currentMemberId}
         currentRole={currentRole}
         onReply={canPost ? setReplyTarget : undefined}
+        onRemoved={(ids) => setReplyTarget((target) => (target && ids.has(target.id) ? null : target))}
       />
       {canPost && (
         <MessageInput

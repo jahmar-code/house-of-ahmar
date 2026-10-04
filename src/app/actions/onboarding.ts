@@ -25,6 +25,9 @@ const CODE_ATTEMPT_WINDOW_MS = 10 * 60 * 1000;
 const codeAttemptKey = (userId: string) => `initiation:code:${userId}`;
 const joinAttemptKey = (userId: string) => `initiation:join:${userId}`;
 
+/** Thrown inside the join transaction to undo the new member row. */
+class InviteNotRedeemed extends Error {}
+
 const TOO_MANY_ATTEMPTS =
   "Too many tries just now — give it a few minutes and have another go.";
 const BAD_CODE = "That code isn't valid. Ask whoever invited you for a new one.";
@@ -235,7 +238,7 @@ export async function completeInitiation(
     // Atomically redeem: increment the count and flip to "used" once consumed.
     const willBeUsed =
       codeRecord.maxUses != null && codeRecord.useCount + 1 >= codeRecord.maxUses;
-    await tx
+    const redeemed = await tx
       .update(accessCodes)
       .set({
         useCount: sql`${accessCodes.useCount} + 1`,
@@ -244,9 +247,18 @@ export async function completeInitiation(
       })
       .where(
         and(eq(accessCodes.id, codeRecord.id), eq(accessCodes.status, "active"))
-      );
+      )
+      .returning({ id: accessCodes.id });
+    // The row lock makes this unreachable today. If locking ever regresses,
+    // undo the new member rather than admit them without consuming the invite.
+    if (redeemed.length === 0) throw new InviteNotRedeemed();
 
     return { ok: true as const, newMember };
+  }).catch((error: unknown) => {
+    if (error instanceof InviteNotRedeemed) {
+      return { ok: false as const, error: "That code has already been used. Ask for a fresh one." };
+    }
+    throw error;
   });
 
   if (!result.ok) {

@@ -47,7 +47,7 @@ The retry path must recognize an already-created member after an interrupted res
 
 ## Account recovery
 
-Sign-in translates provider errors into useful language. Unconfirmed users can request another confirmation; forgotten-password submits a recovery email pointing through `/auth/confirm` to `/reset-password`. The callback accepts supported session/token exchange styles and checks the destination. Failed/expired links return to sign-in with recovery guidance.
+Sign-in translates provider errors into useful language. Unconfirmed users can request another confirmation; if a real relative still cannot confirm, an operator follows the [manual confirmation procedure](../50-operations/troubleshooting.md#operator-procedure-confirm-a-relatives-email-manually) after checking identity out of band; forgotten-password submits a recovery email pointing through `/auth/confirm` to `/reset-password`. The callback accepts supported session/token exchange styles and checks the destination. Failed/expired links return to sign-in with recovery guidance.
 
 Sign-in, signup, and forgotten-password use `HydratedFieldset` so their controlled inputs become editable only after client handlers attach. The reset form already waits for its client session check before showing editable password controls. This keeps early input from being accepted into an unbound form.
 

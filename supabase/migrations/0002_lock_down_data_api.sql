@@ -9,10 +9,11 @@
 -- PATCH their own members.role to 'elder'. This migration denies the Data API by
 -- default and re-opens ONLY the minimal read the Council realtime feature needs.
 --
--- ⚠️  Apply to the Supabase project (SQL editor or `supabase db push`) BEFORE real
---     users, then verify: (a) an authenticated client GET /rest/v1/access_codes and
---     /rest/v1/members?select=email returns nothing/403, (b) Council chat still
---     streams live. Run AFTER 0001 + `drizzle-kit push` (it is idempotent).
+-- Historical note: this header once suggested `supabase db push` and
+-- `drizzle-kit push`. Neither is a supported route to an existing House; follow
+-- docs/pkm/50-operations/migration-runbook.md (comment-only change, 2026-10-03).
+-- Verify afterwards: an authenticated client GET /rest/v1/access_codes and
+-- /rest/v1/members?select=email returns nothing/403, and Council chat streams.
 
 begin;
 

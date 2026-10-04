@@ -110,8 +110,9 @@ export default async function DashboardPage() {
             <UpcomingBirthdays members={allMembers} />
             <UpcomingGatherings
               gatherings={upcomingGatheringsList.slice(0, 5)}
+              canPlan={ctx.role !== "guest"}
             />
-            <RecentPosts posts={recentPostsList} />
+            <RecentPosts posts={recentPostsList} canPost={ctx.role !== "guest"} />
           </div>
         </>
       )}

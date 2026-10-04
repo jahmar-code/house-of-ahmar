@@ -37,7 +37,7 @@ export default async function GatheringDetailPage({
   const attending = gathering.rsvps.filter((r) => r.status === "attending");
   const maybe = gathering.rsvps.filter((r) => r.status === "maybe");
   const canManage =
-    !gathering.archivedAt && (ctx.memberId === gathering.createdBy || ctx.role === "elder");
+    !gathering.archivedAt && ((ctx.memberId === gathering.createdBy && ctx.role !== "guest") || ctx.role === "elder");
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -79,7 +79,7 @@ export default async function GatheringDetailPage({
             {gathering.location && (
               <div className="flex items-center gap-3 text-sm">
                 <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <span className="break-words text-foreground">{gathering.location}</span>
+                <span className="min-w-0 text-foreground wrap-anywhere">{gathering.location}</span>
               </div>
             )}
             <div className="flex items-center gap-3 text-sm">
@@ -89,7 +89,7 @@ export default async function GatheringDetailPage({
                   {gathering.creator.displayName.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <span className="text-muted-foreground">
+              <span className="min-w-0 text-muted-foreground wrap-anywhere">
                 Organized by {gathering.creator.displayName}
               </span>
             </div>
@@ -129,7 +129,7 @@ export default async function GatheringDetailPage({
                 {attending.map((rsvp) => (
                   <div
                     key={rsvp.id}
-                    className="flex items-center gap-2 rounded-full border border-border bg-muted/40 py-1 pl-1 pr-3 transition-colors hover:border-foreground/20"
+                    className="flex min-w-0 max-w-full items-center gap-2 rounded-full border border-border bg-muted/40 py-1 pl-1 pr-3 transition-colors hover:border-foreground/20"
                   >
                     <Avatar size="sm" className="h-6 w-6">
                       <AvatarImage src={rsvp.member.avatarUrl ?? undefined} alt="" />
@@ -137,7 +137,7 @@ export default async function GatheringDetailPage({
                         {rsvp.member.displayName.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="text-xs text-foreground">
+                    <span className="min-w-0 text-xs text-foreground wrap-anywhere">
                       {rsvp.member.displayName}
                     </span>
                   </div>
@@ -157,7 +157,7 @@ export default async function GatheringDetailPage({
                   {maybe.map((rsvp) => (
                     <div
                       key={rsvp.id}
-                      className="flex items-center gap-2 rounded-full border border-border bg-muted/40 py-1 pl-1 pr-3 transition-colors hover:border-foreground/20"
+                      className="flex min-w-0 max-w-full items-center gap-2 rounded-full border border-border bg-muted/40 py-1 pl-1 pr-3 transition-colors hover:border-foreground/20"
                     >
                       <Avatar size="sm" className="h-6 w-6">
                         <AvatarImage src={rsvp.member.avatarUrl ?? undefined} alt="" />
@@ -165,7 +165,7 @@ export default async function GatheringDetailPage({
                           {rsvp.member.displayName.charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="min-w-0 text-xs text-muted-foreground wrap-anywhere">
                         {rsvp.member.displayName}
                       </span>
                     </div>

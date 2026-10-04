@@ -3,14 +3,16 @@
 -- Data integrity: push the House's invariants down into the database, where the
 -- app is only one of several possible writers (Drizzle Studio, psql, the ops
 -- scripts in scripts/). Everything here is additive and idempotent — safe to run
--- before or after `drizzle-kit push`, and safe to run twice.
+-- before or after `drizzle-kit push`, and safe to run twice. (Historical note,
+-- 2026-10-03, comment only: push is not a supported route to an existing House;
+-- see docs/pkm/50-operations/migration-runbook.md.)
 --
 -- Mirrors src/lib/db/schema.ts exactly. If you change one, change the other.
 --
 -- SECURITY: this migration adds NO tables and NO columns, therefore it grants
 -- nothing and needs no new RLS policy. Every table it touches is already locked
 -- from the client Data API by 0002 (RLS on, no anon/authenticated grant), and
--- that posture is unchanged. See CLAUDE.md Critical rule #2.
+-- that posture is unchanged. See the AGENTS.md invariants.
 
 begin;
 

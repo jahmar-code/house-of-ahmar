@@ -5,6 +5,7 @@ source:
   - package.json
   - src/lib
   - scripts
+  - src/test/isolated-database.ts
   - vitest.config.mts
   - drizzle.config.ts
   - next.config.ts
@@ -27,7 +28,8 @@ tags: [reference, tooling]
 | `lib/media.ts` | Private route addresses, allowed buckets, safe paths, and upload ownership |
 | `lib/message-order.ts`, `lib/db/message-projection.ts` | Preserve PostgreSQL microseconds and deterministic message-ID ties across server and realtime rows |
 | `lib/settings.ts` | House identity defaults and reads |
-| `lib/audit.ts` | Shared action labels and best-effort writes |
+| `lib/audit.ts` | Shared action labels, typed per-action metadata (`AuditMetadataByAction`) enforced at runtime by `AUDIT_METADATA_KEYS`/`auditMetadata`, and best-effort writes |
+| `lib/audit-summary.ts` | `summarizeAuditEntry`: one safe line per audit row; never renders codes or content previews, including from older rows |
 | `lib/rate-limit.ts` | Process-local attempt counters; no shared store |
 | `lib/get-url.ts`, `safe-redirect.ts` | Application URL and internal destination handling |
 | `lib/supabase/{client,server,middleware}.ts` | Browser/client cookies and session refresh |
@@ -40,14 +42,15 @@ Read each script's current options and environment safeguards before execution.
 
 | Script | Behavior |
 |---|---|
-| `backup.mjs` | Reads public-schema dump and Storage objects to unique timestamped local output; excludes Auth schema |
+| `backup.mjs` | Read-only, one-snapshot backup of Auth users/identities, public data, a schema reference, Storage objects and a hashed manifest to unique local output; `--env`, `--out`, `--db-only` |
+| `restore.mjs` | Loads a backup into a fresh, provisioned, empty target named by `--env` and `--confirm-target`; refuses the `.env.local` host; verifies counts, linkage and hashes |
+| `restore-rehearsal.mjs` | `npm run test:restore`: back up, recreate and restore the disposable stack, then check identities, media and policies |
+| `local-stack.mjs` | `recreateLocalStack`/`localStackStatus` for the disposable `house-of-ahmar` stack; loopback and port 55322 only |
 | `enable-realtime.mjs` | Ensures message/channel publication configuration; database mutation |
 | `seed-channels.mjs` | Ensures default chamber rows; database mutation |
-| `confirm-test-user.mjs` | Privileged email-confirmation override for a specifically identified test account |
 | `e2e-prepare.mjs`, `e2e-env.mjs`, `e2e-run.mjs` | Recreate the exact disposable local Supabase stack and fixtures, enforce fixed ports, and run browser build/test/server using separate `.next-e2e` output |
 | `check-docs.mjs` | Offline Markdown link/provenance checks |
 | `generate-icons.mjs` | Regenerates local image assets |
 | `check-messages.mjs` | Database diagnostics; avoid content output unless explicitly needed |
-| `seed-past-gathering.mjs` | Development fixture guarded by explicit opt-in |
 
-The confirmation helper is not a substitute for working email delivery. Backup output is private family data and must stay out of Git. `db:generate` produces SQL for inspection; it does not prove migration ordering or grant correctness. See [release](../50-operations/release-runbook.md), [testing](../50-operations/testing-strategy.md), and [recovery](../50-operations/backup-and-recovery.md).
+There is no email-confirmation script; a genuine repair follows the [operator procedure](../50-operations/troubleshooting.md#operator-procedure-confirm-a-relatives-email-manually). Backup output is private family data and must stay out of Git. `db:generate` produces SQL for inspection; it does not prove migration ordering or grant correctness, and `drizzle.config.ts` refuses `drizzle-kit push`/`migrate`/`drop`/`up` outside the disposable test database. `src/test/isolated-database.ts` provides throwaway-schema PostgreSQL fixtures for the opt-in `*.database.test.ts` suites. See [release](../50-operations/release-runbook.md), [testing](../50-operations/testing-strategy.md), and [recovery](../50-operations/backup-and-recovery.md).

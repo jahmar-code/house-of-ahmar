@@ -21,6 +21,18 @@ function revalidateGatherings(gatheringId?: string) {
   if (gatheringId) revalidatePath(`/gatherings/${gatheringId}`);
 }
 
+/** Rows an edit may still change: not cancelled, not archived. */
+const editableGathering = and(eq(gatherings.isCancelled, false), isNull(gatherings.archivedAt));
+
+/** Explain a conditional write that matched nothing, from the row as it is now. */
+async function changedMeanwhile(gatheringId: string, outcome: string): Promise<string> {
+  const current = await db.query.gatherings.findFirst({ where: eq(gatherings.id, gatheringId) });
+  if (!current) return "This gathering is no longer available";
+  if (current.archivedAt) return `This gathering was archived while you were working on it. ${outcome}.`;
+  if (current.isCancelled) return `This gathering was cancelled while you were working on it. ${outcome} — restore it first.`;
+  return `This gathering changed while you were working on it. ${outcome} — reload and try again.`;
+}
+
 export async function createGathering(
   formData: FormData
 ): Promise<ActionResult<{ id: string }>> {
@@ -104,7 +116,9 @@ export async function updateGathering(
   gatheringId: string,
   formData: FormData
 ): Promise<ActionResult> {
-  const ctx = await requireAuth();
+  // Guests RSVP but are otherwise read-only, including on events they created
+  // before an Elder changed their role.
+  const ctx = await requireRole("member");
 
   if (!uuid.safeParse(gatheringId).success) {
     return { success: false, error: "Gathering not found" };
@@ -143,7 +157,10 @@ export async function updateGathering(
     return { success: false, error: parsed.error.issues[0].message };
   }
 
-  await db
+  // The state checked above can change before this write: an Elder may archive
+  // or someone cancel it meanwhile. Keep the still-editable predicate in the
+  // UPDATE itself so an edit can never revive a row nobody can see.
+  const [saved] = await db
     .update(gatherings)
     .set({
       title: parsed.data.title,
@@ -154,7 +171,13 @@ export async function updateGathering(
       isAllDay: parsed.data.isAllDay,
       updatedAt: new Date(),
     })
-    .where(eq(gatherings.id, gatheringId));
+    .where(and(eq(gatherings.id, gatheringId), editableGathering))
+    .returning({ id: gatherings.id });
+
+  if (!saved) {
+    revalidateGatherings(gatheringId);
+    return { success: false, error: await changedMeanwhile(gatheringId, "Your changes weren't saved") };
+  }
 
   revalidateGatherings(gatheringId);
   return { success: true };
@@ -177,7 +200,7 @@ async function setGatheringCancelled(
   gatheringId: string,
   cancelled: boolean
 ): Promise<ActionResult> {
-  const ctx = await requireAuth();
+  const ctx = await requireRole("member"); // guests are read-only
 
   if (!uuid.safeParse(gatheringId).success) {
     return { success: false, error: "Gathering not found" };
@@ -198,10 +221,31 @@ async function setGatheringCancelled(
 
   // Idempotent: cancelling a cancelled gathering is a no-op, not an error.
   if (gathering.isCancelled !== cancelled) {
-    await db
+    const [changed] = await db
       .update(gatherings)
       .set({ isCancelled: cancelled, updatedAt: new Date() })
-      .where(eq(gatherings.id, gatheringId));
+      .where(and(
+        eq(gatherings.id, gatheringId),
+        isNull(gatherings.archivedAt),
+        eq(gatherings.isCancelled, !cancelled)
+      ))
+      .returning({ id: gatherings.id });
+
+    if (!changed) {
+      // Someone else got there first. Same outcome is still a success;
+      // an archive in between is not.
+      const current = await db.query.gatherings.findFirst({ where: eq(gatherings.id, gatheringId) });
+      revalidateGatherings(gatheringId);
+      if (current && !current.archivedAt && current.isCancelled === cancelled) return { success: true };
+      return {
+        success: false,
+        error: !current
+          ? "This gathering is no longer available"
+          : current.archivedAt
+            ? "This gathering was archived while you were working on it. Nothing was changed."
+            : "This gathering changed while you were working on it. Nothing was changed — reload and try again.",
+      };
+    }
 
     await logAudit({
       actorId: ctx.memberId,
@@ -238,8 +282,12 @@ export async function archivePastGatherings(
     .where(
       and(
         // Never re-archive; never touch a gathering that is still running.
+        // One statement: if a reschedule commits while this waits for the row,
+        // PostgreSQL rechecks the end time against the rescheduled version.
         isNull(gatherings.archivedAt),
-        lt(sql`coalesce(${gatherings.endsAt}, ${gatherings.startsAt})`, cutoff)
+        // A raw Date inside sql`` bypasses Drizzle's column encoder and the
+        // postgres-js driver rejects it; bind the instant as typed text.
+        lt(sql`coalesce(${gatherings.endsAt}, ${gatherings.startsAt})`, sql`${cutoff.toISOString()}::timestamptz`)
       )
     )
     .returning({ id: gatherings.id });

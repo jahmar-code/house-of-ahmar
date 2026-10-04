@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { createGathering, updateGathering } from "@/app/actions/gatherings";
 import { toast } from "sonner";
 import { calendarDayStart, calendarDayEnd, calendarInputValue } from "./calendar-date";
+import { HydratedFieldset } from "@/components/shared/hydrated-fieldset";
 
 export interface GatheringFormInitial {
   id: string;
@@ -26,6 +27,9 @@ interface GatheringFormProps {
 }
 
 const pad = (n: number) => String(n).padStart(2, "0");
+const subscribe = () => () => {};
+const clientReady = () => true;
+const serverReady = () => false;
 
 // HTML datetime-local expects "YYYY-MM-DDTHH:mm" without timezone
 function toLocalInputValue(iso: string | null): string {
@@ -50,6 +54,18 @@ export function GatheringForm({ initial }: GatheringFormProps) {
   );
   const [timeError, setTimeError] = useState("");
   const editing = Boolean(initial);
+  const submitRef = useRef<HTMLButtonElement>(null);
+  const refocusSubmit = useRef(false);
+  const hydrated = useSyncExternalStore(subscribe, clientReady, serverReady);
+
+  // Save stays focusable while pending (aria-disabled), so focus is normally
+  // still there after a failure. Safari does not focus clicked buttons; only
+  // then is focus handed back, never pulled from wherever the person moved it.
+  useEffect(() => {
+    if (loading || !refocusSubmit.current) return;
+    refocusSubmit.current = false;
+    if (!document.activeElement || document.activeElement === document.body) submitRef.current?.focus();
+  }, [loading]);
 
   // Switching the toggle re-shapes both inputs, so carry the day across rather
   // than silently blanking what the user already picked.
@@ -100,12 +116,17 @@ export function GatheringForm({ initial }: GatheringFormProps) {
     else formData.delete("endsAt");
     formData.set("isAllDay", allDay ? "true" : "false");
 
+    // The request carries the values captured above. Freeze every field and
+    // Cancel until it settles, so nothing typed now can be silently dropped by
+    // a successful save, and Cancel never implies the save was stopped.
     setLoading(true);
+    let saved = false;
 
     try {
       if (editing && initial) {
         const result = await updateGathering(initial.id, formData);
         if (result.success) {
+          saved = true;
           toast.success("Gathering updated");
           router.push(`/gatherings/${initial.id}`);
           router.refresh();
@@ -115,6 +136,7 @@ export function GatheringForm({ initial }: GatheringFormProps) {
       } else {
         const result = await createGathering(formData);
         if (result.success && result.data) {
+          saved = true;
           toast.success("Gathering created");
           router.push(`/gatherings/${result.data.id}`);
         } else if (!result.success) {
@@ -124,14 +146,21 @@ export function GatheringForm({ initial }: GatheringFormProps) {
     } catch {
       toast.error("That didn't save. Check your connection and try again.");
     } finally {
-      setLoading(false);
+      // On failure the draft is still in the fields, editable and retryable.
+      // After a success the form stays frozen until the navigation replaces it:
+      // edits typed now would be lost, and a second Create would duplicate it.
+      if (!saved) {
+        refocusSubmit.current = true;
+        setLoading(false);
+      }
     }
   }
 
   return (
     <Card>
       <CardContent className="p-5 sm:p-6">
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit}>
+          <HydratedFieldset disabled={loading} className="space-y-5">
           <div className="space-y-2">
             <Label htmlFor="title">
               Title <span className="text-destructive">*</span>
@@ -232,18 +261,23 @@ export function GatheringForm({ initial }: GatheringFormProps) {
             {timeError}
           </p>
 
-          <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:justify-end sm:gap-3">
+          </HydratedFieldset>
+          <div className="mt-5 flex flex-col gap-2 pt-2 sm:flex-row sm:justify-end sm:gap-3">
+            {/* A pending save cannot be stopped, so Cancel must not imply it. */}
             <Button
               type="button"
               variant="outline"
+              disabled={!hydrated || loading}
               onClick={() => router.push(initial ? `/gatherings/${initial.id}` : "/gatherings")}
               className="h-11 w-full sm:h-9 sm:w-auto"
             >
               Cancel
             </Button>
             <Button
+              ref={submitRef}
               type="submit"
-              disabled={loading}
+              disabled={!hydrated}
+              aria-disabled={loading || undefined}
               className="h-11 w-full sm:h-9 sm:w-auto"
             >
               {loading

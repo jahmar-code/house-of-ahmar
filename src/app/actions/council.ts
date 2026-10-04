@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { channels, messages } from "@/lib/db/schema";
-import { eq, and, ne, desc, sql } from "drizzle-orm";
+import { eq, and, ne, desc, sql, inArray } from "drizzle-orm";
 import { requireAuth, requireRole } from "@/lib/auth";
 import {
   messageSchema,
@@ -15,6 +15,7 @@ import { z } from "zod";
 import type { ActionResult } from "@/types";
 import { PUBLIC_MEMBER_COLUMNS, type MessageWithAuthor } from "@/types";
 import { MESSAGE_PRECISION_COLUMNS } from "@/lib/db/message-projection";
+import { LOADED_HISTORY_CHECK_LIMIT } from "@/lib/constants";
 
 const uuid = z.string().uuid();
 
@@ -55,6 +56,38 @@ export async function loadOlderMessages(channelId: string, beforeId: string): Pr
     with: { author: { columns: PUBLIC_MEMBER_COLUMNS } },
   });
   return { success: true, data: { messages: rows.slice(0, 50).reverse(), hasMore: rows.length > 50 } };
+}
+
+/**
+ * Which of these loaded messages are no longer live. Recovery cannot learn
+ * about a deletion it missed outside the newest-100 snapshot any other way,
+ * and refetching all loaded history would be unbounded. Same chamber access
+ * rules as reading the history in the first place.
+ */
+export async function findRemovedMessages(
+  channelId: string,
+  messageIds: string[]
+): Promise<ActionResult<{ removed: string[] }>> {
+  const ctx = await requireAuth();
+  if (
+    !uuid.safeParse(channelId).success ||
+    !Array.isArray(messageIds) ||
+    messageIds.length > LOADED_HISTORY_CHECK_LIMIT ||
+    !messageIds.every((id) => uuid.safeParse(id).success)
+  ) {
+    return { success: false, error: "Chamber not found" };
+  }
+  const channel = await db.query.channels.findFirst({ where: eq(channels.id, channelId) });
+  if (!channel || channel.isArchived || (channel.type === "private" && ctx.role !== "elder")) {
+    return { success: false, error: "Chamber not found" };
+  }
+  if (messageIds.length === 0) return { success: true, data: { removed: [] } };
+  const live = await db
+    .select({ id: messages.id })
+    .from(messages)
+    .where(and(eq(messages.channelId, channelId), eq(messages.isDeleted, false), inArray(messages.id, messageIds)));
+  const liveIds = new Set(live.map((row) => row.id));
+  return { success: true, data: { removed: messageIds.filter((id) => !liveIds.has(id)) } };
 }
 
 export async function sendMessage(
@@ -146,10 +179,10 @@ export async function deleteMessage(messageId: string): Promise<ActionResult> {
       action: "message.deleted_by_elder",
       entityType: "message",
       entityId: messageId,
+      // The removed words stay removed: no copy of them in the trail.
       metadata: {
         authorId: message.authorId,
         channelId: message.channelId,
-        preview: message.content.slice(0, 140),
       },
     });
   }

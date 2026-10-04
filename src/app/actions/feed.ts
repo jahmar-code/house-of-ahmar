@@ -137,7 +137,8 @@ export async function deletePost(postId: string): Promise<ActionResult> {
       entityId: postId,
       metadata: {
         authorId: post.authorId,
-        preview: post.content?.slice(0, 140) ?? null,
+        hadText: Boolean(post.content?.trim()),
+        photoCount: post.mediaUrls?.length ?? 0,
       },
     });
   }
@@ -180,7 +181,6 @@ export async function deleteComment(commentId: string): Promise<ActionResult> {
       metadata: {
         authorId: comment.authorId,
         postId: comment.postId,
-        preview: comment.content.slice(0, 140),
       },
     });
   }

@@ -2,6 +2,10 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "./schema";
 import { getServerEnv } from "@/lib/env";
+import { installDatabaseErrorSanitizer } from "./safe-errors";
+
+// Before any query: failures must never carry parameters into host logs.
+installDatabaseErrorSanitizer();
 
 // Validated up front: a missing DATABASE_URL used to build cleanly and then
 // throw an opaque connection error on the first query.

@@ -2,6 +2,8 @@
 -- Fresh database: apply all migrations in order. Existing schema-first database:
 -- apply 0002, 0003, 0004, then this migration; never replay 0001 over live tables.
 -- Deploy the matching /api/media application code before switching live buckets.
+-- Re-running this file alone restores its older, operation-blind media guards;
+-- always follow it with 20261003200000_operation_aware_media.sql (comment only).
 begin;
 set local lock_timeout = '5s';
 

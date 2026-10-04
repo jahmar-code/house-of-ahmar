@@ -13,7 +13,10 @@ let passed = 0;
 const check = (condition, label) => { assert.ok(condition, label); passed++; };
 try {
   if (process.argv.includes("--reapply")) {
-    await sql.unsafe(await readFile(new URL("../../supabase/migrations/20261003175118_security_and_private_media.sql", import.meta.url), "utf8"));
+    // Upgrade path: replay the security migrations, in order, over existing data.
+    for (const file of ["20261003175118_security_and_private_media.sql", "20261003200000_operation_aware_media.sql"]) {
+      await sql.unsafe(await readFile(new URL(`../../supabase/migrations/${file}`, import.meta.url), "utf8"));
+    }
   }
   try {
     await sql.begin(async (tx) => {
@@ -73,6 +76,71 @@ try {
         check(result.avatar === ["member", "elder", "guest"].includes(role), `${role} avatar upload scope`);
         check(result.other === false, `${role} cannot upload another member avatar`);
       }
+      // Storage runs each request with its operation name in this setting.
+      // Only download/info may read House objects; signing never may (DS-01).
+      const objectName = `${roles.member.memberId}/${randomUUID()}-policy.png`;
+      await tx`insert into storage.objects(bucket_id,name) values ('feed-media',${objectName}), ('archives',${objectName})`;
+      const visible = (role, operation, bucket = "feed-media") => asRole(role, async (sp) => {
+        await sp`select set_config('storage.operation', ${operation}, true)`;
+        const rows = await sp`select 1 from storage.objects where bucket_id = ${bucket} and name = ${objectName}`;
+        return rows.length === 1;
+      });
+      const READS = ["storage.object.get_authenticated", "object.get_authenticated_info", "object.head_authenticated_info"];
+      // Outside the allow-list; the real Storage server proves the main ones in storage-media.mjs.
+      const REFUSED = ["storage.object.sign", "storage.object.sign_many", "storage.object.list", "storage.object.list_v2", "storage.object.copy", "storage.render.image_authenticated", "storage.s3.object.get", ""];
+      const unsetVisible = (role) => asRole(role, async (sp) => {
+        await sp.unsafe("reset storage.operation");
+        return (await sp`select 1 from storage.objects where bucket_id = 'feed-media' and name = ${objectName}`).length === 1;
+      });
+      const mediaOperations = async (stage) => {
+        for (const role of ["member", "guest", "elder", "inactive", "outsider"]) {
+          const allowed = ["member", "guest", "elder"].includes(role);
+          check(!(await unsetVisible(role)), `${stage}: ${role} refused with no Storage operation`);
+          for (const operation of READS) check(await visible(role, operation) === allowed, `${stage}: ${role} ${operation} scope`);
+          for (const operation of REFUSED) check(!(await visible(role, operation)), `${stage}: ${role} refused ${operation || "unset operation"}`);
+          check(await visible(role, READS[0], "archives") === (role === "elder"), `${stage}: ${role} archives download scope`);
+          check(!(await visible(role, "storage.object.sign", "archives")), `${stage}: ${role} cannot sign archives`);
+        }
+      };
+      await mediaOperations("House policies");
+      await tx.savepoint(async (sp) => {
+        await sp`create policy hoa_legacy_open_read on storage.objects for select to authenticated using (true)`;
+        await mediaOperations("with legacy permissive policy");
+        throw new Error("POLICY_ROLLBACK");
+      }).catch((error) => { if (error.message !== "POLICY_ROLLBACK") throw error; });
+      const uploadAs = async (operation, name) => {
+        try {
+          await asRole("member", async (sp) => {
+            await sp`select set_config('storage.operation', ${operation}, true)`;
+            await sp`insert into storage.objects(bucket_id,name) values ('feed-media',${name})`;
+          });
+          return true;
+        } catch (error) { if (error.code === "42501") return false; throw error; }
+      };
+      check(await uploadAs("storage.object.upload", `${roles.member.memberId}/${randomUUID()}-own.png`), "member direct upload into own namespace");
+      check(!(await uploadAs("storage.object.sign_upload_url", `${roles.member.memberId}/${randomUUID()}-own.png`)), "member cannot mint signed upload URLs");
+      check(!(await uploadAs("storage.tus.upload.create", `${roles.member.memberId}/${randomUUID()}-own.png`)), "member cannot start unmanaged resumable uploads");
+      // Replaying 175118 alone would bring back operation-blind guards.
+      const [guard] = await tx`select pg_get_expr(polqual, polrelid) as expr from pg_policy
+        where polrelid = 'storage.objects'::regclass and polname = 'house_media_read_guard'`;
+      check(guard?.expr.includes("is_media_read_operation"), "media read guard is operation-aware");
+      // No client may flip a House bucket public (that bypasses object RLS),
+      // even beside a broad legacy bucket policy.
+      await tx.savepoint(async (sp) => {
+        await sp`create policy hoa_legacy_bucket_read on storage.buckets for select to authenticated using (true)`;
+        await sp`create policy hoa_legacy_bucket_write on storage.buckets for update to authenticated using (true) with check (true)`;
+        const flip = (role) => asRole(role, (rp) => rp`update storage.buckets set public = true where id in ('feed-media','archives','avatars') returning id`);
+        for (const role of ["elder", "member"]) {
+          check((await flip(role)).length === 0, `${role} cannot make a House bucket public`);
+        }
+        // Control: the same legacy policies DO flip buckets once the guard is gone.
+        await sp.savepoint(async (control) => {
+          await control`drop policy house_bucket_update_guard on storage.buckets`;
+          check((await flip("member")).length === 3, "bucket guard, not a missing grant, is what refuses the flip");
+          throw new Error("CONTROL_ROLLBACK");
+        }).catch((error) => { if (error.message !== "CONTROL_ROLLBACK") throw error; });
+        throw new Error("POLICY_ROLLBACK");
+      }).catch((error) => { if (error.message !== "POLICY_ROLLBACK") throw error; });
       const buckets = await tx`select id,public,file_size_limit from storage.buckets where id in ('feed-media','archives','avatars')`;
       check(buckets.length === 3 && buckets.every((b) => !b.public && b.file_size_limit > 0), "All House buckets private and bounded");
       const publicDefiners = await tx`select p.proname from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.prosecdef and has_function_privilege('anon', p.oid, 'execute')`;

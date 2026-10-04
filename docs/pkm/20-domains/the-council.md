@@ -12,7 +12,9 @@ source:
   - src/components/council/message-input.tsx
   - src/lib/db/message-projection.ts
   - src/lib/message-order.ts
+  - src/lib/constants.ts
   - tests/e2e/realtime-recovery.spec.ts
+  - tests/e2e/follow-up.spec.ts
   - supabase/migrations
 verified: 2026-10-03
 tags: [council, realtime]
@@ -32,13 +34,15 @@ History cursors keep timestamps inside PostgreSQL. Server projections also carry
 
 `MessageRow` renders display timestamps through `ActivityTime`. Its server and initial browser output use the same placeholder, then show today's clock time or older relative text in the reader's timezone, with a full local date tooltip. A server deployed in UTC must not cause a text hydration mismatch for a relative in another timezone.
 
-`sendMessage` validates content, target channel, archival/type permissions, and optional reply ID. A reply must reference a live message in the same chamber. A quote from another chamber is not accepted. The author or an Elder can soft-delete; moderation of another person's message is audited.
+`sendMessage` validates content, target channel, archival/type permissions, and optional reply ID. A reply must reference a live message in the same chamber. A quote from another chamber is not accepted. The author or an Elder can soft-delete; moderation of another person's message is audited with its author and chamber, never the removed words.
 
 Channel creation/rename/archive/reopen are Elder-only. Slugs are stable through rename. Similar/conflicting names surface actionable errors instead of raw database exceptions.
 
 ## Reconciliation and resilience
 
 Realtime is one delivery path, not the only one. `realtime-message-list.tsx` also incorporates refreshed server data and refreshes around connection recovery. `message-sync.ts` centralizes ordering/deduplication/reconciliation. A removed message must disappear even when an update event is missed or the refreshed server window becomes empty.
+
+The refreshed snapshot covers only the newest 100 rows, so it cannot vouch for older history the reader loaded with "Load earlier". When more than 100 rows are loaded, `verifyLoadedHistory` calls `findRemovedMessages(channelId, ids)` after the database stream reports ready (including after recovery), on rejoin, and on return to the tab, throttled like the ordinary refresh except after stream recovery. The action applies the same chamber read rules as `loadOlderMessages`, refuses malformed input or more than `LOADED_HISTORY_CHECK_LIMIT` (500) IDs before reading, and returns the IDs that are no longer live; the client batches larger histories and removes only those rows, keeping the reader's position. A failed check changes nothing on screen and the next recovery tries again.
 
 The UI distinguishes connection states and provides recovery feedback. It preserves the reader's position when new messages arrive below them, provides a jump-to-latest action, and respects reduced motion. The composer needs access above mobile bottom navigation and the software keyboard.
 
@@ -48,6 +52,6 @@ Before subscribing, the effect awaits `supabase.realtime.setAuth()` so the brows
 
 ## Verify
 
-Use two authenticated browser contexts: send/reply, observe ordered arrival, remove as owner/Elder, disconnect/reconnect, refresh after missed deletion, and verify no duplicate message. Try guest writing, member access to private chambers, a reply across chambers, archived channel submission, and deactivation of a connected user. Unit reconciliation tests cannot prove live RLS delivery. See [testing strategy](../50-operations/testing-strategy.md).
+Use two authenticated browser contexts: send/reply, observe ordered arrival, remove as owner/Elder, disconnect/reconnect, refresh after missed deletion (including one in loaded older history, as `follow-up.spec.ts` does), and verify no duplicate message. Try guest writing, member access to private chambers, a reply across chambers, archived channel submission, and deactivation of a connected user. Unit reconciliation tests cannot prove live RLS delivery. See [testing strategy](../50-operations/testing-strategy.md).
 
 Current scope excludes message attachments, full-text search, delivered notifications, and read receipts. Earlier history is available through the explicit load-earlier control.

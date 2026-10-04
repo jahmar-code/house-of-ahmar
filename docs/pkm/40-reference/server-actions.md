@@ -10,6 +10,7 @@ source:
   - src/app/actions/onboarding.ts
   - src/app/actions/presence.ts
   - src/app/actions/settings.ts
+  - src/lib/constants.ts
 verified: 2026-10-03
 tags: [reference, actions]
 ---
@@ -25,10 +26,11 @@ Actions live in `src/app/actions`. Caller-supplied IDs, strings, enums, media, a
 | `feed.ts` | `togglePostPin` | Elder |
 | `feed.ts` | `deletePost`, `deleteComment` | Active author or Elder |
 | `gatherings.ts` | `createGathering` | Member or Elder |
-| `gatherings.ts` | `updateGathering`, `cancelGathering`, `uncancelGathering` | Active creator or Elder; resource-state checks |
+| `gatherings.ts` | `updateGathering`, `cancelGathering`, `uncancelGathering` | Active creator or Elder; state rechecked inside the conditional UPDATE, recoverable conflict when an archive/cancel landed after the read |
 | `gatherings.ts` | `updateRsvp` | Any active member, including guest; available target |
 | `gatherings.ts` | `archivePastGatherings` | Elder; bounded threshold |
 | `council.ts` | `loadOlderMessages` | Active member with chamber visibility and validated cursor |
+| `council.ts` | `findRemovedMessages` | Same chamber visibility; at most `LOADED_HISTORY_CHECK_LIMIT` valid IDs; returns loaded IDs no longer live |
 | `council.ts` | `sendMessage` | Member/Elder with chamber-type and archival checks; announcements Elder-only |
 | `council.ts` | `deleteMessage` | Active author or Elder |
 | `council.ts` | `createChannel`, `renameChannel`, `archiveChannel`, `unarchiveChannel` | Elder |

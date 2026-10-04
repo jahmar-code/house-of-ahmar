@@ -50,3 +50,6 @@ export const REACTION_KEYS = REACTION_EMOJIS.map((r) => r.key) as unknown as [
   ReactionKey,
   ...ReactionKey[],
 ];
+
+/** Most loaded Council rows one recovery tombstone check accepts; clients batch. */
+export const LOADED_HISTORY_CHECK_LIMIT = 500;

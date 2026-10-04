@@ -39,6 +39,7 @@ const dbMock = vi.hoisted(() => {
 
   const inserted: Record<string, unknown>[] = [];
   const updated: Record<string, unknown>[] = [];
+  // Rows a conditional UPDATE ... RETURNING matched (none = lost a race).
   const archiveResult: { rows: { id: string }[] } = { rows: [] };
 
   return {
@@ -155,6 +156,7 @@ describe("updateGathering", () => {
 
   it("lets an Elder edit someone else's gathering", async () => {
     auth.ctx.role = "elder";
+    dbMock.archiveResult.rows = [{ id: GATHERING_ID }];
     dbMock.query.gatherings.findFirst.mockResolvedValue(
       liveGathering({ createdBy: "someone-else" })
     );
@@ -163,6 +165,30 @@ describe("updateGathering", () => {
 
     expect(result).toEqual({ success: true });
     expect(dbMock.update).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports an archive that landed after the read instead of acknowledging the edit", async () => {
+    dbMock.query.gatherings.findFirst
+      .mockResolvedValueOnce(liveGathering())
+      .mockResolvedValueOnce(liveGathering({ archivedAt: new Date("2026-01-01") }));
+
+    const result = await updateGathering(GATHERING_ID, gatheringForm());
+
+    expect(result).toEqual({
+      success: false,
+      error: "This gathering was archived while you were working on it. Your changes weren't saved.",
+    });
+  });
+
+  it("reports a cancellation that landed after the read", async () => {
+    dbMock.query.gatherings.findFirst
+      .mockResolvedValueOnce(liveGathering())
+      .mockResolvedValueOnce(liveGathering({ isCancelled: true }));
+
+    const result = await updateGathering(GATHERING_ID, gatheringForm());
+
+    expect(result.success).toBe(false);
+    expect(!result.success && result.error).toMatch(/cancelled while you were working on it/);
   });
 
   it("refuses to edit a cancelled gathering", async () => {
@@ -194,6 +220,16 @@ describe("updateGathering", () => {
   });
 });
 
+describe("guests and gatherings they created", () => {
+  it("refuses a guest editing or cancelling, even as the creator", async () => {
+    auth.ctx.role = "guest";
+    dbMock.query.gatherings.findFirst.mockResolvedValue(liveGathering());
+    await expect(updateGathering(GATHERING_ID, gatheringForm())).rejects.toThrow("Insufficient permissions");
+    await expect(cancelGathering(GATHERING_ID)).rejects.toThrow("Insufficient permissions");
+    expect(dbMock.update).not.toHaveBeenCalled();
+  });
+});
+
 describe("cancelGathering / uncancelGathering", () => {
   it("refuses a member who did not create it", async () => {
     dbMock.query.gatherings.findFirst.mockResolvedValue(
@@ -207,6 +243,7 @@ describe("cancelGathering / uncancelGathering", () => {
   });
 
   it("cancels and audits", async () => {
+    dbMock.archiveResult.rows = [{ id: GATHERING_ID }];
     dbMock.query.gatherings.findFirst.mockResolvedValue(liveGathering());
 
     const result = await cancelGathering(GATHERING_ID);
@@ -219,6 +256,7 @@ describe("cancelGathering / uncancelGathering", () => {
   });
 
   it("restores a cancelled gathering and audits", async () => {
+    dbMock.archiveResult.rows = [{ id: GATHERING_ID }];
     dbMock.query.gatherings.findFirst.mockResolvedValue(
       liveGathering({ isCancelled: true })
     );
@@ -230,6 +268,29 @@ describe("cancelGathering / uncancelGathering", () => {
     expect(audit.logAudit).toHaveBeenCalledWith(
       expect.objectContaining({ action: "gathering.uncancelled" })
     );
+  });
+
+  it("refuses a cancellation when an archive landed after the read, without an audit entry", async () => {
+    dbMock.query.gatherings.findFirst
+      .mockResolvedValueOnce(liveGathering())
+      .mockResolvedValueOnce(liveGathering({ archivedAt: new Date("2026-01-01") }));
+
+    const result = await cancelGathering(GATHERING_ID);
+
+    expect(result).toEqual({
+      success: false,
+      error: "This gathering was archived while you were working on it. Nothing was changed.",
+    });
+    expect(audit.logAudit).not.toHaveBeenCalled();
+  });
+
+  it("treats a concurrent identical cancellation as success without a second audit entry", async () => {
+    dbMock.query.gatherings.findFirst
+      .mockResolvedValueOnce(liveGathering())
+      .mockResolvedValueOnce(liveGathering({ isCancelled: true }));
+
+    expect(await cancelGathering(GATHERING_ID)).toEqual({ success: true });
+    expect(audit.logAudit).not.toHaveBeenCalled();
   });
 
   it("is idempotent — cancelling a cancelled gathering writes nothing", async () => {

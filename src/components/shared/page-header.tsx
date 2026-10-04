@@ -28,7 +28,7 @@ export function PageHeader({
             {eyebrow}
           </p>
         )}
-        <Heading className="font-heading text-2xl font-bold tracking-tight text-foreground text-balance sm:text-3xl">
+        <Heading className="font-heading text-2xl font-bold tracking-tight text-foreground text-balance wrap-anywhere sm:text-3xl">
           {title}
         </Heading>
         {description && (

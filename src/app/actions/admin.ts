@@ -60,8 +60,8 @@ export async function createAccessCode(
     action: "access_code.created",
     entityType: "access_code",
     entityId: created.id,
+    // The code is a bearer secret: the entity id identifies the invite.
     metadata: {
-      code,
       label: parsed.data.label ?? null,
       maxUses: parsed.data.maxUses,
       expiresInDays: parsed.data.expiresInDays ?? null,
@@ -96,7 +96,7 @@ export async function revokeAccessCode(
     action: "access_code.revoked",
     entityType: "access_code",
     entityId: codeId,
-    metadata: { code: target.code, label: target.label },
+    metadata: { label: target.label },
   });
 
   ACCESS_CODE_ROUTES.forEach((route) => revalidatePath(route));

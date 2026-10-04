@@ -6,9 +6,11 @@ import type { Gathering, Member } from "@/types";
 
 interface UpcomingGatheringsProps {
   gatherings: (Gathering & { creator: Member })[];
+  /** Guests can RSVP but not plan; never offer them a page that turns them away. */
+  canPlan: boolean;
 }
 
-export function UpcomingGatherings({ gatherings }: UpcomingGatheringsProps) {
+export function UpcomingGatherings({ gatherings, canPlan }: UpcomingGatheringsProps) {
   return (
     <Card className="border-border bg-card">
       <CardHeader className="pb-3">
@@ -30,13 +32,15 @@ export function UpcomingGatherings({ gatherings }: UpcomingGatheringsProps) {
             <p className="text-sm text-muted-foreground">
               Nothing on the calendar.
             </p>
-            <Link
-              href="/gatherings/new"
-              className="inline-flex min-h-11 items-center gap-1.5 rounded-lg text-sm font-medium text-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-            >
-              Plan a gathering
-              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-            </Link>
+            {canPlan && (
+              <Link
+                href="/gatherings/new"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-lg text-sm font-medium text-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+              >
+                Plan a gathering
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+              </Link>
+            )}
           </div>
         ) : (
           <div className="space-y-2.5">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { PostPhotos } from "./post-photos";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
@@ -30,9 +30,11 @@ interface PostCardProps {
   post: PostWithDetails;
   currentMemberId: string;
   currentRole: HoaRole;
+  /** Just published by this viewer: bring it into view and mark it. */
+  highlighted?: boolean;
 }
 
-export function PostCard({ post, currentMemberId, currentRole }: PostCardProps) {
+export function PostCard({ post, currentMemberId, currentRole, highlighted = false }: PostCardProps) {
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -49,7 +51,16 @@ export function PostCard({ post, currentMemberId, currentRole }: PostCardProps) 
   const canDelete =
     post.authorId === currentMemberId || currentRole === "elder";
   const canPin = currentRole === "elder";
+  // Guests read the House; the server refuses their reactions, so offer none.
+  const canReact = currentRole !== "guest";
   const milestone = milestoneMeta(post.milestoneKind);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!highlighted) return;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    cardRef.current?.scrollIntoView({ block: "nearest", behavior: reduceMotion ? "auto" : "smooth" });
+  }, [highlighted]);
 
   async function handleDelete() {
     const result = await deletePost(post.id);
@@ -148,11 +159,17 @@ export function PostCard({ post, currentMemberId, currentRole }: PostCardProps) 
 
   return (
     <Card
+      ref={cardRef}
+      id={`post-${post.id}`}
+      data-highlighted={highlighted || undefined}
       className={
-        isHighlighted ? "border-primary/20 ring-1 ring-primary/30" : ""
+        highlighted
+          ? "scroll-mt-24 scroll-mb-28 ring-2 ring-primary/60 lg:scroll-mb-6"
+          : isHighlighted ? "border-primary/20 ring-1 ring-primary/30" : ""
       }
     >
       <CardContent className="p-4 sm:p-5">
+        {highlighted && <span className="sr-only">Your new post.</span>}
         {/* Author header */}
         <div className="flex items-start justify-between gap-2">
           <div className="flex min-w-0 items-center gap-3">
@@ -246,34 +263,52 @@ export function PostCard({ post, currentMemberId, currentRole }: PostCardProps) 
         {/* Engagement bar */}
         <div className="mt-4 border-t border-border pt-3">
           {/* Reactions */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            {REACTION_EMOJIS.map(({ key, emoji }) => {
-              const count = reactionCounts[key] || 0;
-              const isActive = myReactions.has(key);
-              const isBusy = pendingReaction === key;
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => handleReaction(key)}
-                  disabled={pendingReaction !== null}
-                  aria-pressed={isActive}
-                  aria-busy={isBusy}
-                  aria-label={`React ${key}${count > 0 ? `, ${count}` : ""}`}
-                  className={`inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3 py-2 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-60 ${
-                    isActive
-                      ? "border-primary/40 bg-primary/10 text-foreground"
-                      : "border-border bg-muted/40 text-muted-foreground hover:border-foreground/20 hover:text-foreground"
-                  }`}
-                >
-                  <span className="text-sm leading-none">{emoji}</span>
-                  {count > 0 && (
-                    <span className="tabular-nums font-medium">{count}</span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+          {canReact ? (
+            <div className="flex flex-wrap items-center gap-1.5">
+              {REACTION_EMOJIS.map(({ key, emoji }) => {
+                const count = reactionCounts[key] || 0;
+                const isActive = myReactions.has(key);
+                const isBusy = pendingReaction === key;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => handleReaction(key)}
+                    disabled={pendingReaction !== null}
+                    aria-pressed={isActive}
+                    aria-busy={isBusy}
+                    aria-label={`React ${key}${count > 0 ? `, ${count}` : ""}`}
+                    className={`inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3 py-2 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-60 ${
+                      isActive
+                        ? "border-primary/40 bg-primary/10 text-foreground"
+                        : "border-border bg-muted/40 text-muted-foreground hover:border-foreground/20 hover:text-foreground"
+                    }`}
+                  >
+                    <span className="text-sm leading-none">{emoji}</span>
+                    {count > 0 && (
+                      <span className="tabular-nums font-medium">{count}</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            REACTION_EMOJIS.some(({ key }) => reactionCounts[key]) && (
+              // role="list": Safari drops list semantics when list-style is none.
+              <ul role="list" aria-label="Reactions" className="flex flex-wrap items-center gap-1.5">
+                {REACTION_EMOJIS.filter(({ key }) => reactionCounts[key]).map(({ key, emoji }) => (
+                  <li
+                    key={key}
+                    className="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-border px-3 text-xs text-muted-foreground"
+                  >
+                    <span aria-hidden="true" className="text-sm leading-none">{emoji}</span>
+                    <span className="sr-only">{key}</span>
+                    <span className="tabular-nums font-medium">{reactionCounts[key]}</span>
+                  </li>
+                ))}
+              </ul>
+            )
+          )}
 
           {/* Comments toggle */}
           <button
@@ -304,7 +339,7 @@ export function PostCard({ post, currentMemberId, currentRole }: PostCardProps) 
                     </Avatar>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-x-2">
-                        <span className="text-xs font-medium text-foreground">
+                        <span className="min-w-0 text-xs font-medium text-foreground wrap-anywhere">
                           {comment.author.displayName}
                         </span>
                         <span className="text-[11px] text-muted-foreground">

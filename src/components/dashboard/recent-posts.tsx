@@ -7,9 +7,11 @@ import type { Post, Member } from "@/types";
 
 interface RecentPostsProps {
   posts: (Post & { author: Member })[];
+  /** Guests read The Wall but cannot write on it. */
+  canPost: boolean;
 }
 
-export function RecentPosts({ posts }: RecentPostsProps) {
+export function RecentPosts({ posts, canPost }: RecentPostsProps) {
   return (
     <Card className="border-border bg-card">
       <CardHeader className="pb-3">
@@ -31,13 +33,15 @@ export function RecentPosts({ posts }: RecentPostsProps) {
             <p className="text-sm text-muted-foreground">
               Nothing on The Wall yet.
             </p>
-            <Link
-              href="/feed"
-              className="inline-flex min-h-11 items-center gap-1.5 rounded-lg text-sm font-medium text-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-            >
-              Write the first post
-              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-            </Link>
+            {canPost && (
+              <Link
+                href="/feed"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-lg text-sm font-medium text-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+              >
+                Write the first post
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+              </Link>
+            )}
           </div>
         ) : (
           <div className="space-y-2.5">
@@ -54,8 +58,8 @@ export function RecentPosts({ posts }: RecentPostsProps) {
                   </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-foreground">
+                  <div className="flex flex-wrap items-center gap-x-2">
+                    <span className="min-w-0 text-sm font-medium text-foreground wrap-anywhere">
                       {post.author.displayName}
                     </span>
                     <span className="text-xs text-muted-foreground">
@@ -64,7 +68,7 @@ export function RecentPosts({ posts }: RecentPostsProps) {
                       })}
                     </span>
                   </div>
-                  <p className="mt-0.5 text-sm text-muted-foreground line-clamp-2">
+                  <p className="mt-0.5 text-sm text-muted-foreground line-clamp-2 wrap-anywhere">
                     {post.content}
                   </p>
                 </div>

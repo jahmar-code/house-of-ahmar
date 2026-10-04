@@ -24,8 +24,8 @@ The `(house)` directory is an App Router group, not part of browser URLs. Privat
 | `/initiation` | Authenticated non-member or paused-access guidance | AccessCodeForm |
 | `/initiation/profile` | Invited identity completing its profile | ProfileForm |
 | `/initiation/complete` | Completed initiation welcome | Great Hall link |
-| `/dashboard` | Great Hall | HallSummary, FirstRunCard, recent posts, upcoming events/birthdays, online members |
-| `/feed?page=N` | The Wall with older/newer pages | PostForm, PostCard, lightbox and comment/reaction controls |
+| `/dashboard` | Great Hall | HallSummary, FirstRunCard, recent posts, upcoming events/birthdays, online members; guests get no planning or posting links |
+| `/feed?page=N`, `/feed?post=<id>` | The Wall with older/newer pages; `post` opens the page holding that post and highlights it | PostForm, PostCard, lightbox and comment/reaction controls |
 | `/gatherings`, `/gatherings?view=archived` | Current/archived event lists | GatheringCard, ArchivePastButton |
 | `/gatherings/new` | Member/Elder planning | GatheringForm |
 | `/gatherings/[id]` | Event detail and RSVP | RsvpButton, GatheringActions |
@@ -39,7 +39,7 @@ The `(house)` directory is an App Router group, not part of browser URLs. Privat
 | `/elder-council/members` | Role and activity | MemberManagement |
 | `/elder-council/channels` | Chamber administration | CreateChannelForm, ChannelActions |
 | `/elder-council/settings` | House identity | SettingsForm |
-| `/elder-council/audit-log` | Administrative history | Audit event list |
+| `/elder-council/audit-log` | Administrative history | Audit event list rendered through `summarizeAuditEntry` |
 
 Metadata routes include robots and the app manifest. Private media has its own authenticated route; see [auth/security](../10-architecture/auth-and-security.md). Error, loading, and not-found boundaries sit beside product pages and should be preserved when adding nested routes.
 

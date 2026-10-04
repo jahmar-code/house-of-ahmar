@@ -34,6 +34,14 @@ jobs:
         run: npm run build:e2e
       - name: Desktop and mobile browser journeys
         run: npm run test:e2e
+      # pg_dump must be at least as new as the PostgreSQL 17 test server.
+      - name: Install a PostgreSQL 17 client for the recovery rehearsal
+        run: |
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y --no-install-recommends postgresql-client-17
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+      - name: Back up, recreate and restore the disposable stack
+        run: npm run test:restore
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: failure()
         with:

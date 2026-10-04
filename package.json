@@ -12,16 +12,17 @@
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "db:generate": "drizzle-kit generate",
-    "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "backup": "node scripts/backup.mjs",
+    "restore": "node scripts/restore.mjs",
     "typecheck": "tsc --noEmit",
     "docs:check": "node scripts/check-docs.mjs",
     "test:e2e:prepare": "node scripts/e2e-prepare.mjs",
     "build:e2e": "node scripts/e2e-run.mjs build",
     "test:e2e": "node scripts/e2e-run.mjs test",
     "start:e2e": "node scripts/e2e-run.mjs start",
-    "test:db": "node tests/integration/database-security.mjs && HOA_DATABASE_TESTS=1 vitest run src/app/actions/council.database.test.ts"
+    "test:restore": "node scripts/restore-rehearsal.mjs",
+    "test:db": "node tests/integration/database-security.mjs && node tests/integration/storage-media.mjs && node tests/integration/realtime-revocation.mjs && HOA_DATABASE_TESTS=1 vitest run database.test"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",

@@ -14,6 +14,11 @@ source:
   - src/components/shared/hydrated-fieldset.tsx
   - src/components/shared/activity-time.tsx
   - src/components/shared/use-modal-focus-guard-names.ts
+  - src/components/gatherings/gathering-form.tsx
+  - src/components/feed/post-card.tsx
+  - src/app/(house)/members/[id]/page.tsx
+  - src/app/(house)/gatherings/[id]/page.tsx
+  - tests/e2e/helpers.ts
 verified: 2026-10-03
 tags: [design, accessibility]
 ---
@@ -26,20 +31,20 @@ The visual language is dark neutral surfaces, high-contrast text, one orange acc
 
 Desktop uses a sidebar; narrower screens use a sticky header and bottom navigation. Content padding accounts for fixed chrome and device safe areas. The root viewport configuration and shell safe-area rules belong together. Council's available height must keep its message composer above navigation and the software keyboard.
 
-Content must reflow at narrow widths, long names, larger system text, and zoom. Avoid relying on hover for essential actions; provide keyboard and touch access. Wide admin tables need an intentional compact or scrollable presentation with visible controls.
+Content must reflow at narrow widths, long names, larger system text, and zoom. User-supplied text that can be one long word or link, such as profile names, bios, email and gathering locations, uses `wrap-anywhere` rather than clipping inside its card; the browser `checkLayout` helper fails when any clipping box in `main` hides content horizontally. Avoid relying on hover for essential actions; provide keyboard and touch access. Wide admin tables need an intentional compact or scrollable presentation with visible controls.
 
 ## Interaction contract
 
 - Every input has a persistent label and useful constraints; errors identify a recovery step.
-- The Wall, profile, sign-in, signup, and forgotten-password forms use `HydratedFieldset` to defer editing until their controlled input handlers are attached. The fieldset preserves the rendered layout and native disabled semantics during this brief initialization.
+- The Wall, profile, sign-in, signup, forgotten-password, and gathering forms use `HydratedFieldset` to defer editing until their controlled input handlers are attached. The fieldset preserves the rendered layout and native disabled semantics during this brief initialization. The gathering form also passes `disabled` while saving, sets `aria-busy`, and returns focus to Save after a failure.
 - Hydrated activity timestamps use `ActivityTime` to render a stable initial placeholder before browser-local clock/relative text. Server and browser clocks or timezones must not produce different hydration text.
-- Buttons and links retain visible focus, sufficient contrast, and comfortable touch targets.
+- Buttons and links retain visible focus, sufficient contrast, and comfortable touch targets. Do not offer a control or link the viewer's role cannot use; show read-only state instead, as the Wall does for guests' reaction counts.
 - Destructive actions use the shared confirmation pattern, name the affected content, disable during submission, and explain failures.
 - Dialogs support Escape, sensible initial focus, focus return, and keyboard navigation.
 - Shared dialogs and navigation sheets name Base UI's Safari-only focus boundary buttons through `useModalFocusGuardNames`. The adapter preserves their roles, tab order, and focus handlers for VoiceOver; it watches only the current portal and labels unnamed adjacent guards. This addresses the [upstream unnamed-guard issue](https://github.com/mui/base-ui/issues/5237) without hiding the Safari controls from assistive technology.
 - Successful actions update the visible list/count/state. A toast alone is not proof of a completed flow.
 - A skip link moves focus to the main content. Loading regions and important asynchronous errors have accessible status semantics.
-- Respect reduced motion and preserve reading position in chat. New messages below the reader get a deliberate jump-to-latest affordance.
+- Respect reduced motion and preserve reading position in chat. A newly published Wall post scrolls into view smoothly, or instantly under reduced motion. New messages below the reader get a deliberate jump-to-latest affordance.
 - Images have meaningful alternative text when content-bearing; decorative imagery does not create repeated screen-reader noise.
 
 ## Verification expectations

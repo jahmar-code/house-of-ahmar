@@ -17,17 +17,23 @@ interface FirstRunCardProps {
  */
 export function FirstRunCard({ role, houseName }: FirstRunCardProps) {
   const isElder = role === "elder";
+  // Guests read and RSVP; their next steps must be ones the House allows.
+  const isGuest = role === "guest";
 
   const primary = isElder
     ? { href: "/elder-council/access-codes", label: "Create the first invite code" }
-    : { href: "/feed", label: "Write the first post" };
+    : isGuest
+      ? { href: "/feed", label: "Read The Wall" }
+      : { href: "/feed", label: "Write the first post" };
 
   const secondary = isElder
     ? [
         { href: "/elder-council/settings", label: "Name the House and set the welcome" },
         { href: "/feed", label: "Write the first post" },
       ]
-    : [{ href: "/gatherings/new", label: "Plan a gathering" }];
+    : isGuest
+      ? [{ href: "/gatherings", label: "See what is planned" }]
+      : [{ href: "/gatherings/new", label: "Plan a gathering" }];
 
   return (
     <Card className="border-border bg-card">
@@ -39,7 +45,9 @@ export function FirstRunCard({ role, houseName }: FirstRunCardProps) {
           <p className="text-sm text-muted-foreground">
             {isElder
               ? `You are the first one home. Send everyone a code and ${houseName} starts filling up.`
-              : `It is quiet in ${houseName} for now. Say something and the rest will follow.`}
+              : isGuest
+                ? `It is quiet in ${houseName} for now. Have a look around; more is on the way.`
+                : `It is quiet in ${houseName} for now. Say something and the rest will follow.`}
           </p>
         </div>
 

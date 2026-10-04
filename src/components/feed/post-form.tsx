@@ -179,7 +179,10 @@ export function PostForm({ memberId, role }: PostFormProps) {
             ? "Announcement posted"
             : "Posted to The Wall"
         );
-        router.refresh();
+        // Show the committed post wherever it now sorts — refreshing an older
+        // page, or assuming page 1 when pins fill it, would hide it.
+        // Replace, not push: Back should not walk through earlier highlights.
+        router.replace(result.data ? `/feed?post=${result.data.id}` : "/feed", { scroll: false });
       } else {
         toast.error(result.error);
       }
