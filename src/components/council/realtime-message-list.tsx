@@ -118,6 +118,9 @@ export function RealtimeMessageList({
   useEffect(() => {
     onRemovedRef.current = onRemoved;
   }, [onRemoved]);
+  // The re-run goes through a ref: a useCallback that names itself defeats the
+  // React Compiler's memoization check.
+  const verifyRef = useRef<(force?: boolean) => Promise<void>>(async () => {});
   const verifyLoadedHistory = useCallback(async (force = false): Promise<void> => {
     const loaded = messagesRef.current;
     if (!olderLoadedRef.current && loaded.length <= SNAPSHOT_SIZE) return;
@@ -150,10 +153,13 @@ export function RealtimeMessageList({
       verifyingRef.current = false;
       if (rerunVerifyRef.current) {
         rerunVerifyRef.current = false;
-        void verifyLoadedHistory(true);
+        void verifyRef.current(true);
       }
     }
   }, [channelId]);
+  useEffect(() => {
+    verifyRef.current = verifyLoadedHistory;
+  }, [verifyLoadedHistory]);
 
   // The ScrollArea viewport is the scroll container — track how far from the
   // bottom the reader is so we never yank them away from what they're reading.
