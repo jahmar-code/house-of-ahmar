@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
-import { getURL } from "@/lib/get-url";
+import { confirmURL } from "@/lib/get-url";
 import { HydratedFieldset } from "@/components/shared/hydrated-fieldset";
 
 type SignUpProblem = { message: string; alreadyRegistered: boolean };
@@ -40,7 +40,23 @@ function readSignUpError(raw: string): SignUpProblem {
   };
 }
 
-export function SignUpForm() {
+type SignUpFormProps = {
+  /** Where the confirmed (or immediately signed-in) account continues. */
+  nextPath?: string;
+  signInHref?: string;
+  signInLabel?: string;
+  signInPrompt?: string;
+  /** See SignInForm: keep the confirmation on the origin serving this form. */
+  confirmOnCurrentOrigin?: boolean;
+};
+
+export function SignUpForm({
+  nextPath = "/initiation",
+  signInHref = "/sign-in",
+  signInLabel = "Enter the House",
+  signInPrompt = "Already a member?",
+  confirmOnCurrentOrigin = false,
+}: SignUpFormProps = {}) {
   const router = useRouter();
 
   // Controlled on purpose: React 19 resets an uncontrolled `<form action={fn}>`
@@ -66,7 +82,7 @@ export function SignUpForm() {
         options: {
           // Send the confirmation link back to our callback on the *current*
           // origin so it never points at localhost in production.
-          emailRedirectTo: getURL("/auth/confirm?next=/initiation"),
+          emailRedirectTo: confirmURL(`/auth/confirm?next=${encodeURIComponent(nextPath)}`, confirmOnCurrentOrigin),
         },
       });
 
@@ -79,7 +95,7 @@ export function SignUpForm() {
       }
 
       if (data.session) {
-        router.push("/initiation");
+        router.push(nextPath);
         router.refresh();
         return;
       }
@@ -174,12 +190,12 @@ export function SignUpForm() {
       </Button>
 
       <p className="text-center text-xs text-muted-foreground">
-        Already a member?{" "}
+        {signInPrompt}{" "}
         <Link
-          href="/sign-in"
+          href={signInHref}
           className="text-primary underline underline-offset-4 hover:underline"
         >
-          Enter the House
+          {signInLabel}
         </Link>
       </p>
       </HydratedFieldset>

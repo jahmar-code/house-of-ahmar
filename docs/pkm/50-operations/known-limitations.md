@@ -13,7 +13,8 @@ source:
   - src/lib/audit-summary.ts
   - supabase/operations/redact-audit-secrets.sql
   - supabase/migrations/20261003200000_operation_aware_media.sql
-verified: 2026-10-03
+  - src/lib/workshop/status.ts
+verified: 2026-10-23
 tags: [limits, operations]
 ---
 
@@ -30,6 +31,7 @@ tags: [limits, operations]
 | Audit | Best-effort log inserts after operations; rows written before the metadata allow-list may still hold invite codes or removed-content previews | Successful mutations may lack a log entry if logging fails. The audit page never renders those older keys. The live House was redacted with `supabase/operations/redact-audit-secrets.sql` on 2026-10-04; another environment needs its own operator-approved run, and older backups keep the keys |
 | Backup | Auth users/identities, public data and House Storage objects; restore only into a fresh target provisioned from migrations | Restore is rehearsed on the local stack only; a hosted restore, Auth configuration, and in-place or partial recovery into the live House are unproven |
 | Media links | Where `20261003200000` is applied, browser sessions cannot sign Storage URLs | URLs signed before it was applied keep their caller-chosen lifetime. The live House had no House objects when it was applied (2026-10-04); elsewhere, follow the detection and re-keying plan in the follow-up resolution |
+| Workshop | Live view polls every 5–10s rather than streaming; a browser that blocks `*.localhost` can't try the subdomain locally; per-instance per-minute rate limit (daily budgets are database-enforced); operator binding trusts Supabase email confirmation; no per-share "control" grant or alerting | Updates lag by up to one interval; only owners can act; nobody is notified when an agent goes offline |
 | Offline | Manifest/icons without a complete offline strategy | Installing a shortcut does not guarantee offline access |
 | Environment parity | Remote project settings can drift from source | Validate policies, storage, redirects, and migrations in the target |
 

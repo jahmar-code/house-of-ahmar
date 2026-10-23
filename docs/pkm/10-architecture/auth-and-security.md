@@ -17,7 +17,9 @@ source:
   - src/lib/db/safe-errors.ts
   - src/lib/audit.ts
   - src/lib/audit-summary.ts
-verified: 2026-10-03
+  - src/lib/workshop/access.ts
+  - src/lib/workshop/routing.ts
+verified: 2026-10-23
 tags: [security, auth]
 ---
 
@@ -31,6 +33,8 @@ tags: [security, auth]
 4. Browser Data API privileges are separately constrained by SQL grants and RLS. The app's privileged Postgres connection does not inherit browser restrictions.
 
 `proxy.ts` maintains a public-path allow-list for the front door, auth/recovery, callback, and metadata. Other paths require a session. Metadata such as `hoa_member_id` is user-writable and is no longer used as a membership gate. The proxy authenticates only; database-backed loaders/actions enforce membership and roles. Never authorize from metadata or trust an incoming role.
+
+The Workshop is a second, independent boundary on the same Supabase Auth. `getOperatorContext` resolves an active `operators` row; House membership grants nothing there, and being an operator grants nothing in the House. Agent ingest under `/api/agents/v1` skips the cookie session and authenticates each request with a hashed bearer token. On `HOA_WORKSHOP_HOST`, every House path is rewritten under `/workshop`, so the operators' domain cannot render family pages. The Workshop tables have RLS with no policies and no client grants. See [the Workshop](../20-domains/the-workshop.md) for the permission matrix.
 
 ## Read exposure
 

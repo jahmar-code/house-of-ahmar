@@ -13,7 +13,9 @@ source:
   - supabase/operations
   - agents
   - AGENTS.md
-verified: 2026-10-03
+  - src/lib/workshop
+  - tools/hoa-agent/hoa-agent.mjs
+verified: 2026-10-23
 tags: [repository, overview]
 ---
 
@@ -26,6 +28,9 @@ tags: [repository, overview]
 | `src/app/auth/confirm/route.ts` | Session exchange/OTP confirmation callback |
 | `src/app/initiation` | Access-code and first-profile flow |
 | `src/app/(house)` | Protected House shell and product pages; route group is absent from URLs |
+| `src/app/workshop`, `src/app/api/agents` | The Workshop (agent monitoring) pages and the agent ingest API |
+| `src/lib/workshop`, `src/components/workshop` | Workshop access rules, status model, ingest helpers, queries and UI |
+| `tools/hoa-agent` | Zero-dependency reporter agents copy to talk to the Workshop |
 | `src/app/actions` | Authenticated and validated server mutation boundaries |
 | `src/components/{dashboard,feed,gatherings,council,members}` | Domain UI |
 | `src/components/layout` | Responsive navigation and presence |

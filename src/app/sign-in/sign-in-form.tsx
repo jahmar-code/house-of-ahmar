@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
-import { getURL } from "@/lib/get-url";
+import { confirmURL } from "@/lib/get-url";
 import { safeRedirectPath } from "@/lib/safe-redirect";
 import { HydratedFieldset } from "@/components/shared/hydrated-fieldset";
 
@@ -46,7 +46,28 @@ function readSignInError(raw: string): SignInProblem {
   };
 }
 
-export function SignInForm() {
+type SignInFormProps = {
+  /** Where to go after sign-in when `next` is absent. */
+  fallbackPath?: string;
+  submitLabel?: string;
+  signUpHref?: string;
+  /** Where a fresh confirmation link should land. */
+  confirmNext?: string;
+  /**
+   * Build the confirmation link on the origin the form is served from instead
+   * of NEXT_PUBLIC_SITE_URL. The Workshop host needs this so the session cookie
+   * is set on its own domain.
+   */
+  confirmOnCurrentOrigin?: boolean;
+};
+
+export function SignInForm({
+  fallbackPath = "/dashboard",
+  submitLabel = "Enter the House",
+  signUpHref = "/sign-up",
+  confirmNext = "/initiation",
+  confirmOnCurrentOrigin = false,
+}: SignInFormProps = {}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const confirmationFailed = searchParams.get("error") === "confirmation_failed";
@@ -88,7 +109,7 @@ export function SignInForm() {
       }
 
       // `next` is attacker-controlled — only same-site paths are followed.
-      router.push(safeRedirectPath(searchParams.get("next"), "/dashboard"));
+      router.push(safeRedirectPath(searchParams.get("next"), fallbackPath));
       router.refresh();
     } catch {
       setError("Couldn't sign in. Check your connection and try again.");
@@ -107,7 +128,7 @@ export function SignInForm() {
         type: "signup",
         email,
         options: {
-          emailRedirectTo: getURL("/auth/confirm?next=/initiation"),
+          emailRedirectTo: confirmURL(`/auth/confirm?next=${encodeURIComponent(confirmNext)}`, confirmOnCurrentOrigin),
         },
       });
 
@@ -198,13 +219,13 @@ export function SignInForm() {
       )}
 
       <Button type="submit" disabled={loading} className="h-11 w-full">
-        {loading ? "Entering..." : "Enter the House"}
+        {loading ? "Entering..." : submitLabel}
       </Button>
 
       <p className="text-center text-xs text-muted-foreground">
         New here?{" "}
         <Link
-          href="/sign-up"
+          href={signUpHref}
           className="text-primary underline underline-offset-4 hover:underline"
         >
           Set up your account

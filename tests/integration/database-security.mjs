@@ -47,7 +47,16 @@ try {
         check(rejected, label);
       };
       const tables = await tx`select relname, relrowsecurity from pg_class where relnamespace='public'::regnamespace and relkind='r'`;
-      check(tables.length === 14 && tables.every((t) => t.relrowsecurity), "All 14 application tables have RLS");
+      check(tables.length === 19 && tables.every((t) => t.relrowsecurity), "All 19 application tables (14 House + 5 Workshop) have RLS");
+      // The Workshop is server-only: no browser role may read tokens, shares or logs.
+      for (const role of ["anon", "member", "elder", "outsider"]) {
+        await denied(role, "select token_hash from public.agents", `${role} cannot read agent tokens`);
+        await denied(role, "select email from public.operators", `${role} cannot read operators`);
+        await denied(role, "select message from public.agent_events", `${role} cannot read agent logs`);
+        await denied(role, "select agent_id from public.agent_shares", `${role} cannot read agent shares`);
+        await denied(role, "select summary from public.agent_runs", `${role} cannot read agent runs`);
+        await denied(role, "insert into public.operators(email,display_name,role) values ('x@y.z','x','admin')", `${role} cannot add operators`);
+      }
       for (const role of ["anon", "member", "outsider"]) {
         await denied(role, "select code from public.access_codes", `${role} cannot read invite codes`);
         await denied(role, "select email from public.members", `${role} cannot read member PII`);

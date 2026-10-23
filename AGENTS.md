@@ -12,7 +12,7 @@ Build a calm, private home for one inclusive family. Read [product vision](docs/
 
 ## Invariants
 
-- One House per database. Do not introduce organizations, subscriptions, onboarding funnels, or unrelated HotSeat features.
+- One House per database. Do not introduce organizations, subscriptions, onboarding funnels, or unrelated HotSeat features. The one approved exception is [the Workshop](docs/pkm/20-domains/the-workshop.md), the founders' agent-monitoring console: keep its operators, tables and routes separate from family membership and content.
 - Active database membership and role/ownership decide access. Supabase user metadata and client UI are not authorization. Every private read and mutation must enforce its own trust boundary; parent layout redirects alone do not authorize a child data loader.
 - Server Actions authenticate, validate untrusted input, check resource state/ownership, mutate through Drizzle, and return the established result shape. Do not trust TypeScript unions, IDs, or supplied media paths at runtime.
 - The server database connection can bypass RLS. Keep application checks **and** deny-by-default Data API policies. No service-role key in app/browser code.

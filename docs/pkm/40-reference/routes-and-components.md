@@ -6,7 +6,9 @@ source:
   - src/components
   - src/proxy.ts
   - src/components/layout/nav-items.ts
-verified: 2026-10-03
+  - src/app/workshop
+  - src/app/api/agents/v1/heartbeat/route.ts
+verified: 2026-10-23
 tags: [reference, routes]
 ---
 
@@ -20,6 +22,8 @@ The `(house)` directory is an App Router group, not part of browser URLs. Privat
 | `/sign-in`, `/sign-up` | Auth entry | Sign-in/sign-up forms |
 | `/forgot-password`, `/reset-password` | Account recovery | Recovery/reset forms |
 | `/auth/confirm` | Auth callback | Route handler, safe redirect helper |
+| `/workshop/*` | Workshop operators (separate from members); served at the root of `HOA_WORKSHOP_HOST` | WorkshopShell, AgentCard, EventLog. See [the Workshop](../20-domains/the-workshop.md#pages) |
+| `/api/agents/v1/*`, `/api/agents/cron/prune` | Agent bearer token / `CRON_SECRET`; no cookie session | See [agent ingest API](agent-ingest-api.md) |
 | `/api/media/[bucket]/[...path]` | Active-membership-protected images | Cookie-authenticated route and Storage policy |
 | `/initiation` | Authenticated non-member or paused-access guidance | AccessCodeForm |
 | `/initiation/profile` | Invited identity completing its profile | ProfileForm |
