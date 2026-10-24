@@ -4,6 +4,7 @@ summary: Application, build-time, and operational configuration without secret v
 source:
   - .env.example
   - src/lib/env.ts
+  - src/lib/workshop/env.ts
   - src/lib/get-url.ts
   - src/lib/supabase/client.ts
   - src/lib/db/index.ts
@@ -12,7 +13,7 @@ source:
   - next.config.ts
   - scripts/e2e-env.mjs
   - scripts/e2e-prepare.mjs
-verified: 2026-10-03
+verified: 2026-10-23
 tags: [reference, configuration]
 ---
 
@@ -27,6 +28,9 @@ tags: [reference, configuration]
 | `DATABASE_URL` | Drizzle/Postgres and database ops; backups need a direct or session connection | Secret, privileged database access |
 | `NEXT_PUBLIC_SITE_URL` | Stable app origin for metadata and auth links | Public; set for deployed environments |
 | `HOA_DEFAULT_ACCESS_CODE` | Empty-House founding Elder only | Secret temporary invite; remove after founding |
+| `HOA_WORKSHOP_HOST` | Host that serves the [Workshop](../20-domains/the-workshop.md) at its root, e.g. `agents.kabul-afghanistan.ca` | Public configuration; optional |
+| `HOA_WORKSHOP_ADMIN_EMAILS` | Comma-separated emails provisioned as Workshop admins on first confirmed sign-in | Low; identifies the founders |
+| `CRON_SECRET` | Bearer secret Vercel Cron sends to `/api/agents/cron/prune` | Secret; 16+ characters, shorter disables the cron |
 | `SUPABASE_SERVICE_ROLE_KEY` | Storage half of `backup.mjs` and `restore.mjs`; the generated test environment | Secret; never browser-prefixed or used as a client shortcut |
 | `NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL`, `VERCEL_URL` | Hosting-origin fallbacks in `getURL` | Host-injected configuration |
 

@@ -6,7 +6,8 @@ source:
   - src/components/layout/nav-items.ts
   - src/app/(house)/dashboard/page.tsx
   - src/lib/db/schema.ts
-verified: 2026-10-03
+  - src/app/workshop
+verified: 2026-10-23
 tags: [product, overview]
 ---
 
@@ -30,6 +31,8 @@ These are acceptance outcomes, not measured production metrics. No usage analyti
 ## Shipped scope
 
 The Great Hall summarizes current activity; The Wall holds updates and milestones; Gatherings coordinates events; Council supports conversations; Our People shows active relatives; Settings manages one's profile; Elder Council handles administration. [Domain notes](../Home.md#product-domains) trace each to source.
+
+Separately, the founders use [the Workshop](../20-domains/the-workshop.md): an agent-monitoring dashboard on its own subdomain, with its own operator allowlist. It is an owner-approved exception (2026-10-23), not family product scope, and operators gain no family access.
 
 The database represents exactly one House. There is no tenant selector, billing, public content feed, notification service, or generalized SaaS administration. `albums`, `photos`, and `member_relationships` remain in the schema, but their historic UI was removed. A database table is not a shipped feature.
 

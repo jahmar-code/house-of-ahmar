@@ -2,7 +2,7 @@
 //
 // Seeds synthetic history on the prepared E2E stack, backs it up with the real
 // backup script, DESTROYS and recreates the stack (every local Supabase volume of
-// project_id "house-of-ahmar" on this machine) from the migrations, restores
+// project_id "hoa-workshop" on this machine) from the migrations, restores
 // with the real restore script, then proves identities, history, photos and the
 // Data API/Storage boundaries came back intact. Run after `test:e2e:prepare`;
 // it leaves the restored fixtures in place and removes its own rows/objects.

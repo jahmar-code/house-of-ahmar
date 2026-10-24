@@ -8,7 +8,8 @@ source:
   - src/lib/audit.ts
   - drizzle.config.ts
   - supabase/migrations
-verified: 2026-10-03
+  - supabase/migrations/20261023120000_workshop_agents.sql
+verified: 2026-10-23
 tags: [reference, database]
 ---
 
@@ -31,6 +32,11 @@ tags: [reference, database]
 | `audit_logs` | Actor/action/entity/timestamp plus per-action allow-listed metadata (`AUDIT_METADATA_KEYS`) for administrative history |
 | `member_relationships` | Retained parent/child links; no current family-tree UI |
 | `albums`, `photos` | Retained media archive structure; no current Archives UI |
+| `operators` | Workshop allowlist: lower-case unique email, optional bound Auth user ID, `admin`/`operator` role, active flag. Not related to `members` |
+| `agents` | Owner operator, name, SHA-256 token hash and hint, desired/reported state, heartbeat fields, metadata, soft archive |
+| `agent_shares` | Agent/operator pairs allowed to watch an agent |
+| `agent_runs` | Agent runs keyed by `(agent_id, external_id)`; status, summary, metrics, start/end |
+| `agent_events` | Agent activity log: level, message, data, optional run and acting operator; pruned after 30 days |
 
 ## Integrity
 

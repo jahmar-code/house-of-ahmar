@@ -11,7 +11,8 @@ source:
   - src/app/actions/presence.ts
   - src/app/actions/settings.ts
   - src/lib/constants.ts
-verified: 2026-10-03
+  - src/app/actions/workshop.ts
+verified: 2026-10-23
 tags: [reference, actions]
 ---
 
@@ -21,6 +22,8 @@ Actions live in `src/app/actions`. Caller-supplied IDs, strings, enums, media, a
 
 | Module | Symbols | Boundary |
 |---|---|---|
+| `workshop.ts` | `createAgent`, `updateAgent`, `rotateAgentToken`, `setDesiredState`, `setAgentShare`, `archiveAgent` | Active Workshop operator; every action except create also requires agent ownership (a share recipient gets "not found") |
+| `workshop.ts` | `addOperator`, `setOperatorActive` | Workshop admin; last active admin protected under a table lock |
 | `onboarding.ts` | `validateAccessCode`, `completeInitiation` | Verified Supabase user; invite validation/redemption and active-membership recovery |
 | `feed.ts` | `createPost`, `addComment`, `toggleReaction` | Member or Elder; announcement creation Elder-only |
 | `feed.ts` | `togglePostPin` | Elder |

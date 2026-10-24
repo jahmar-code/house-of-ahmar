@@ -35,7 +35,8 @@ source:
   - tests/integration/storage-media.mjs
   - .github/workflows/ci.yml
   - next.config.ts
-verified: 2026-10-03
+  - src/app/actions/workshop.database.test.ts
+verified: 2026-10-23
 tags: [testing, quality]
 ---
 
@@ -85,11 +86,13 @@ The settings journey restores both database values and rendered public pages. Lo
 
 ## Real database security checks
 
+The local stack is project `hoa-workshop` in the Workshop worktree. Run one stack at a time and stop it when done; see [Workshop deployment](workshop-deployment.md#local-verification-one-stack-at-a-time).
+
 After local fixture preparation, run `npm run test:db`. It runs, in order:
 
 - `tests/integration/database-security.mjs`: catalog and policy behavior as browser-facing identities. Storage checks set `storage.operation` the way the server does: download/info are allowed; signing, listing, copy, rendering, S3 names and an unset operation fall outside the allow-list, with and without a synthetic legacy permissive policy. It also asserts the read guard is operation-aware, and that no client can make a House bucket public even beside a broad legacy bucket policy (a control drops the guard to prove it is what refuses). Its fixtures roll back. Against the real Storage server (`storage-media.mjs`) single and batch signing, signed uploads, listing, copy and move are proven refused, beside a positive signing control in a temporary non-House bucket; rendering, TUS and S3 are refused by the allow-list but not exercised end to end.
 - `tests/integration/storage-media.mjs`: the same media boundary through the real Storage HTTP API with signed-in synthetic Elder, member, guest, deactivated and outsider identities: uploads by namespace, downloads by role, Elder-only Archives, refused single and batch signing, refused signed upload URLs, empty listing, and the legacy-policy case. It removes every fixture and fails if cleanup is incomplete.
-- Every `*.database.test.ts` file through Vitest with `HOA_DATABASE_TESTS=1`. `council.database.test.ts` calls the real history action against microsecond timestamp fixtures. `concurrency.database.test.ts` races real invite redemption, founding-Elder, duplicate-retry, and Elder demote/deactivate/stale-actor actions. `gatherings.database.test.ts` commits a competing archive, cancel or reschedule between a gathering action's read and write. Only identity, cache, environment and audit edges are stubbed.
+- Every `*.database.test.ts` file through Vitest with `HOA_DATABASE_TESTS=1`. `council.database.test.ts` calls the real history action against microsecond timestamp fixtures. `concurrency.database.test.ts` races real invite redemption, founding-Elder, duplicate-retry, and Elder demote/deactivate/stale-actor actions. `workshop.database.test.ts` drives the real Workshop ingest routes, actions, access rules and read models on a rolled-back transaction: provisioning, privacy, sharing, owner-only control, idempotent runs, token rotation, deactivation and archive. `gatherings.database.test.ts` commits a competing archive, cancel or reschedule between a gathering action's read and write. Only identity, cache, environment and audit edges are stubbed.
 
 The concurrency and gathering suites run on `src/test/isolated-database.ts`: a throwaway schema of `LIKE public.* INCLUDING ALL` table copies (without foreign keys) on the test database, reached through independent pooled connections. `concurrency.database.test.ts` also uses its contention barrier, which holds the first writer until another request is observed waiting on a lock, and its failure injection, which drops advisory/row locks or the actor recheck to prove each test detects a broken guard. All suites require the loopback database on port 55322 and never read `.env.local`. The ordinary `npm run check` skips the `*.database.test.ts` suites.
 

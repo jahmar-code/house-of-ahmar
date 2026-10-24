@@ -11,6 +11,7 @@ Source reviewed: **2026-10-03**. This is a capability summary, not a claim that 
 | Council | General/announcement/private chambers, live messages, replies, removal, reconnect feedback, earlier-message loading, Elder chamber management |
 | Our People | Directory, active-member profiles, limited contact visibility for guests |
 | Elder Council | Invitations, roles, activation, chambers, House identity, audit log |
+| Workshop (2026-10-23) | Founders' agent-monitoring console on its own subdomain: operator allowlist, agent registration with hashed tokens, heartbeat/runs/events ingest API, live status, owner-only pause/resume/stop, sharing, retention cron, reporter SDK. Verified against local Supabase only; see [Workshop deployment](docs/pkm/50-operations/workshop-deployment.md) for the remaining live steps |
 | Delivery | Responsive dark interface, loading/error/not-found states, source tests, documented operations and agent workflow |
 
 ## October security correction

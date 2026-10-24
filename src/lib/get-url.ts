@@ -30,3 +30,13 @@ export function getURL(path = ""): string {
   if (!path) return base;
   return `${base}${path.startsWith("/") ? path : `/${path}`}`;
 }
+
+/**
+ * An auth confirmation link. By default it uses `getURL`; with `onCurrentOrigin`
+ * it stays on the browser's origin. That is used by the Workshop host, which
+ * /auth/confirm accepts only when it equals the configured HOA_WORKSHOP_HOST.
+ */
+export function confirmURL(path: string, onCurrentOrigin = false): string {
+  if (onCurrentOrigin && typeof window !== "undefined") return `${window.location.origin}${path}`;
+  return getURL(path);
+}

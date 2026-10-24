@@ -505,3 +505,167 @@ export const memberRelationshipsRelations = relations(
     }),
   })
 );
+
+// ─── The Workshop (agent monitoring) ───
+// A separate operator space on the same Supabase Auth. Operators are NOT House
+// members and these tables never join to family content. Closed sets live in
+// src/lib/workshop/constants.ts and are pinned by CHECKs in
+// supabase/migrations/20261023120000_workshop_agents.sql.
+
+export const operators = pgTable(
+  "operators",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    // Bound on the first confirmed sign-in whose email matches `email`.
+    authUserId: uuid("auth_user_id").unique(),
+    email: text("email").notNull().unique(),
+    displayName: text("display_name").notNull(),
+    role: text("role").notNull().default("operator"),
+    isActive: boolean("is_active").notNull().default(true),
+    invitedBy: uuid("invited_by").references((): AnyPgColumn => operators.id, {
+      onDelete: "set null",
+    }),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    check("operators_role_check", sql`${table.role} in ('admin', 'operator')`),
+    check("operators_email_lower_check", sql`${table.email} = lower(${table.email})`),
+  ]
+);
+
+export const agents = pgTable(
+  "agents",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    ownerId: uuid("owner_id")
+      .notNull()
+      .references(() => operators.id, { onDelete: "restrict" }),
+    name: text("name").notNull(),
+    description: text("description"),
+    // sha256 of the bearer token; the token itself is shown once and never stored.
+    tokenHash: text("token_hash").notNull().unique(),
+    tokenHint: text("token_hint").notNull(),
+    tokenRotatedAt: timestamp("token_rotated_at", { withTimezone: true }).notNull().defaultNow(),
+    desiredState: text("desired_state").notNull().default("run"),
+    desiredStateAt: timestamp("desired_state_at", { withTimezone: true }).notNull().defaultNow(),
+    reportedStatus: text("reported_status"),
+    statusMessage: text("status_message"),
+    version: text("version"),
+    host: text("host"),
+    heartbeatIntervalSec: integer("heartbeat_interval_sec").notNull().default(30),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>(),
+    lastHeartbeatAt: timestamp("last_heartbeat_at", { withTimezone: true }),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("agents_owner_idx").on(table.ownerId),
+    check("agents_desired_state_check", sql`${table.desiredState} in ('run', 'pause', 'stop')`),
+    check(
+      "agents_reported_status_check",
+      sql`${table.reportedStatus} is null or ${table.reportedStatus} in ('starting', 'running', 'idle', 'paused', 'error', 'stopping', 'stopped')`
+    ),
+    check(
+      "agents_heartbeat_interval_check",
+      sql`${table.heartbeatIntervalSec} between 5 and 3600`
+    ),
+  ]
+);
+
+export const agentShares = pgTable(
+  "agent_shares",
+  {
+    agentId: uuid("agent_id")
+      .notNull()
+      .references(() => agents.id, { onDelete: "cascade" }),
+    operatorId: uuid("operator_id")
+      .notNull()
+      .references(() => operators.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("agent_shares_pk").on(table.agentId, table.operatorId),
+    index("agent_shares_operator_idx").on(table.operatorId),
+  ]
+);
+
+export const agentRuns = pgTable(
+  "agent_runs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    agentId: uuid("agent_id")
+      .notNull()
+      .references(() => agents.id, { onDelete: "cascade" }),
+    // The agent's own run identifier, so it can update a run without storing ours.
+    externalId: text("external_id").notNull(),
+    status: text("status").notNull().default("running"),
+    summary: text("summary"),
+    metrics: jsonb("metrics").$type<Record<string, unknown>>(),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+    endedAt: timestamp("ended_at", { withTimezone: true }),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    // Insert time, used for the daily run budget (startedAt is agent-supplied).
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("agent_runs_external_idx").on(table.agentId, table.externalId),
+    index("agent_runs_agent_created_idx").on(table.agentId, table.createdAt),
+    index("agent_runs_agent_started_idx").on(table.agentId, table.startedAt),
+    check(
+      "agent_runs_status_check",
+      sql`${table.status} in ('running', 'succeeded', 'failed', 'cancelled')`
+    ),
+  ]
+);
+
+export const agentEvents = pgTable(
+  "agent_events",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    agentId: uuid("agent_id")
+      .notNull()
+      .references(() => agents.id, { onDelete: "cascade" }),
+    runId: uuid("run_id").references(() => agentRuns.id, { onDelete: "set null" }),
+    level: text("level").notNull().default("info"),
+    message: text("message").notNull(),
+    data: jsonb("data").$type<Record<string, unknown>>(),
+    // Set by the dashboard for control actions; null for agent-reported events.
+    actorId: uuid("actor_id").references(() => operators.id, { onDelete: "set null" }),
+    occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index("agent_events_agent_occurred_idx").on(table.agentId, table.occurredAt),
+    index("agent_events_created_idx").on(table.createdAt),
+    index("agent_events_agent_created_idx").on(table.agentId, table.createdAt),
+    check("agent_events_level_check", sql`${table.level} in ('debug', 'info', 'warn', 'error')`),
+  ]
+);
+
+export const operatorsRelations = relations(operators, ({ many }) => ({
+  agents: many(agents),
+  shares: many(agentShares),
+}));
+
+export const agentsRelations = relations(agents, ({ one, many }) => ({
+  owner: one(operators, { fields: [agents.ownerId], references: [operators.id] }),
+  shares: many(agentShares),
+  runs: many(agentRuns),
+  events: many(agentEvents),
+}));
+
+export const agentSharesRelations = relations(agentShares, ({ one }) => ({
+  agent: one(agents, { fields: [agentShares.agentId], references: [agents.id] }),
+  operator: one(operators, { fields: [agentShares.operatorId], references: [operators.id] }),
+}));
+
+export const agentRunsRelations = relations(agentRuns, ({ one }) => ({
+  agent: one(agents, { fields: [agentRuns.agentId], references: [agents.id] }),
+}));
+
+export const agentEventsRelations = relations(agentEvents, ({ one }) => ({
+  agent: one(agents, { fields: [agentEvents.agentId], references: [agents.id] }),
+  run: one(agentRuns, { fields: [agentEvents.runId], references: [agentRuns.id] }),
+  actor: one(operators, { fields: [agentEvents.actorId], references: [operators.id] }),
+}));
