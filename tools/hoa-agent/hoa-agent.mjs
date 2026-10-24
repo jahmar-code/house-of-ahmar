@@ -30,7 +30,7 @@ export class WorkshopAgent {
   constructor(options = {}) {
     this.url = (options.url ?? process.env.HOA_WORKSHOP_URL ?? "").replace(/\/+$/, "");
     this.token = options.token ?? process.env.HOA_AGENT_TOKEN ?? "";
-    if (!this.url) throw new Error("HOA_WORKSHOP_URL is not set (e.g. https://agents.example.af)");
+    if (!this.url) throw new Error("HOA_WORKSHOP_URL is not set (e.g. https://agents.kabul-afghanistan.ca)");
     if (!this.token) throw new Error("HOA_AGENT_TOKEN is not set");
     this.intervalSec = options.intervalSec ?? DEFAULT_INTERVAL_SEC;
     this.host = options.host ?? hostname();

@@ -1,7 +1,7 @@
 // A complete, runnable example: a worker that processes a job every 20 seconds,
 // honours pause/stop from the Workshop, and reports runs and logs.
 //
-//   HOA_WORKSHOP_URL=https://agents.example.af HOA_AGENT_TOKEN=hoa_agent_… node tools/hoa-agent/example.mjs
+//   HOA_WORKSHOP_URL=https://agents.kabul-afghanistan.ca HOA_AGENT_TOKEN=hoa_agent_… node tools/hoa-agent/example.mjs
 import { WorkshopAgent } from "./hoa-agent.mjs";
 
 const agent = new WorkshopAgent({ intervalSec: 15 });

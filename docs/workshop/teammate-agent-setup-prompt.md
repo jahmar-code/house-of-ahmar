@@ -1,10 +1,10 @@
 # Workshop teammate setup: metaprompt for your Claude agent
 
-Hand everything below the line to your own Claude agent (Claude Code or similar) on the machine where your agents run. Before you do, replace `<WORKSHOP_URL>` with the Workshop address you were given (for example `https://agents.example.af`). The canonical API contract is [agent ingest API](../pkm/40-reference/agent-ingest-api.md).
+Hand everything below the line to your own Claude agent (Claude Code or similar) on the machine where your agents run. Before you do, confirm the Workshop is live at `https://agents.kabul-afghanistan.ca`. The canonical API contract is [agent ingest API](../pkm/40-reference/agent-ingest-api.md).
 
 ---
 
-You are helping me connect my running software agents to **the Workshop**, a private monitoring dashboard my cofounder hosts at `<WORKSHOP_URL>`. Once connected, I'll see my agents' live status, runs and logs there. I can share chosen agents with my cofounder, who can watch but not control them, and I can pause, resume or stop them from the dashboard. Work through the steps below in order. Stop and ask me whenever a step needs me (anything in a browser, or a choice only I can make). Don't guess.
+You are helping me connect my running software agents to **the Workshop**, a private monitoring dashboard my cofounder hosts at `https://agents.kabul-afghanistan.ca`. Once connected, I'll see my agents' live status, runs and logs there. I can share chosen agents with my cofounder, who can watch but not control them, and I can pause, resume or stop them from the dashboard. Work through the steps below in order. Stop and ask me whenever a step needs me (anything in a browser, or a choice only I can make). Don't guess.
 
 ## Ground rules
 
@@ -16,7 +16,7 @@ You are helping me connect my running software agents to **the Workshop**, a pri
 ## Step 1 — My access (I do this; you guide me)
 
 1. Ask me whether my cofounder has already added my email on the Workshop's **Operators** page, or listed me as an admin. If not, I need to ask them first.
-2. Have me open `<WORKSHOP_URL>/workshop/sign-up`, create an account with **that exact email**, and click the confirmation email. Then I sign in at `<WORKSHOP_URL>`.
+2. Have me open `https://agents.kabul-afghanistan.ca/workshop/sign-up`, create an account with **that exact email**, and click the confirmation email. Then I sign in at `https://agents.kabul-afghanistan.ca`.
 3. If I see "You're not on the operator list", the email doesn't match what was added, or isn't confirmed yet. Help me sort that out before continuing.
 
 ## Step 2 — Inventory my agents
@@ -30,7 +30,7 @@ For each agent I choose:
 1. Have me go to **Agents → New agent** in the Workshop, give it a clear name and description, and copy the token it shows once.
 2. Ask me to paste the token where you can store it securely, alongside that agent's existing secrets, as:
    ```
-   HOA_WORKSHOP_URL=<WORKSHOP_URL>
+   HOA_WORKSHOP_URL=https://agents.kabul-afghanistan.ca
    HOA_AGENT_TOKEN=hoa_agent_…
    ```
 3. Confirm the storage location is not tracked by git (`git check-ignore`).
@@ -41,7 +41,7 @@ The API is plain HTTPS with `Authorization: Bearer $HOA_AGENT_TOKEN`:
 
 | Call | Body | Use |
 |---|---|---|
-| `POST <WORKSHOP_URL>/api/agents/v1/heartbeat` | `{"status":"running","message":"…","version":"…","intervalSec":30,"metadata":{…}}` | Every ~30s, and whenever status changes. Status is one of `starting`, `running`, `idle`, `paused`, `error`, `stopping`, `stopped` |
+| `POST https://agents.kabul-afghanistan.ca/api/agents/v1/heartbeat` | `{"status":"running","message":"…","version":"…","intervalSec":30,"metadata":{…}}` | Every ~30s, and whenever status changes. Status is one of `starting`, `running`, `idle`, `paused`, `error`, `stopping`, `stopped` |
 | `POST …/runs` | `{"runId":"your-id","status":"running"\|"succeeded"\|"failed"\|"cancelled","summary":"…","metrics":{…}}` | Optional. Start and finish discrete jobs; upserts by `runId` |
 | `POST …/events` | `{"events":[{"level":"info"\|"warn"\|"error"\|"debug","message":"…","runId":"…"}]}` | Optional log lines, up to 100 per call |
 | `GET …/control` | — | Returns `{"desiredState":"run"\|"pause"\|"stop"}`. Every response above includes it too |

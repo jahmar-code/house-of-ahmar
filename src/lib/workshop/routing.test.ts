@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { workshopRewritePath } from "./routing";
 
-const HOST = "agents.example.af";
+const HOST = "agents.kabul-afghanistan.ca";
 
 describe("workshopRewritePath", () => {
   it("leaves every other host alone", () => {
-    expect(workshopRewritePath("/", "example.af", HOST)).toBeNull();
+    expect(workshopRewritePath("/", "kabul-afghanistan.ca", HOST)).toBeNull();
     expect(workshopRewritePath("/feed", "house-of-ahmar.vercel.app", HOST)).toBeNull();
     expect(workshopRewritePath("/", HOST, undefined)).toBeNull();
   });

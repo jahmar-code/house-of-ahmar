@@ -18,7 +18,7 @@ tags: [domain, workshop, agents, security]
 
 # The Workshop
 
-The Workshop is a dashboard where the House's founders register the software agents they run, watch them live, share them with each other, and pause or stop them. It runs inside the same Next.js app and Supabase project as the House. It is served at the root of its own subdomain (for example `agents.<domain>.af`, set by `HOA_WORKSHOP_HOST`) and is also reachable at `/workshop` on any host.
+The Workshop is a dashboard where the House's founders register the software agents they run, watch them live, share them with each other, and pause or stop them. It runs inside the same Next.js app and Supabase project as the House. It is served at the root of its own subdomain (for example `agents.kabul-afghanistan.ca`, set by `HOA_WORKSHOP_HOST`) and is also reachable at `/workshop` on any host.
 
 It was added on 2026-10-23 at the owner's request as a deliberate, bounded exception to the "no unrelated features" rule in [AGENTS.md](../../../AGENTS.md). It shares nothing with family content.
 

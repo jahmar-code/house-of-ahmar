@@ -46,7 +46,7 @@ export async function proxy(request: NextRequest) {
 
   const { supabaseResponse, user } = await updateSession(request);
 
-  // On the Workshop host (e.g. agents.example.af) every House page maps into
+  // On the Workshop host (e.g. agents.kabul-afghanistan.ca) every House page maps into
   // /workshop, so the subdomain can never show family content.
   const host = request.headers.get("host")?.toLowerCase() ?? "";
   const rewrite = workshopRewritePath(pathname, host, getWorkshopEnv().host);

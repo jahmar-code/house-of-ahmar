@@ -3,7 +3,7 @@
 // affected Workshop feature (and logs why); it must never 500 a family page.
 
 export type WorkshopEnv = {
-  /** Host that serves the Workshop at its root, e.g. agents.example.af. */
+  /** Host that serves the Workshop at its root, e.g. agents.kabul-afghanistan.ca. */
   host?: string;
   /** Lower-cased emails provisioned as admins on first confirmed sign-in. */
   adminEmails: Set<string>;
@@ -31,7 +31,7 @@ export function parseWorkshopHost(raw: string | undefined): string | undefined {
   const host = raw?.trim().toLowerCase();
   if (!host) return undefined;
   if (!/^[a-z0-9.-]+(:\d+)?$/.test(host)) {
-    warnOnce("HOA_WORKSHOP_HOST must be a bare hostname such as agents.example.af; subdomain routing is off.");
+    warnOnce("HOA_WORKSHOP_HOST must be a bare hostname such as agents.kabul-afghanistan.ca; subdomain routing is off.");
     return undefined;
   }
   return host;

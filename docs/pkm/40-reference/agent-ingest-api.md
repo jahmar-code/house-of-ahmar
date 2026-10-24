@@ -20,7 +20,7 @@ tags: [reference, workshop, api]
 
 # Agent ingest API
 
-Agents push to the Workshop; the Workshop never connects to them. Base URL: the Workshop origin, e.g. `https://agents.<domain>.af`. Every endpoint is under `/api/agents/v1/`, and the proxy skips the cookie session for these paths.
+Agents push to the Workshop; the Workshop never connects to them. Base URL: the Workshop origin, e.g. `https://agents.kabul-afghanistan.ca`. Every endpoint is under `/api/agents/v1/`, and the proxy skips the cookie session for these paths.
 
 ## Authentication
 
