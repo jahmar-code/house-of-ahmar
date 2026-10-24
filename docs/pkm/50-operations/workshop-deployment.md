@@ -66,7 +66,7 @@ Workshop sign-in/sign-up build their confirmation link on the Workshop origin (`
 
 ## 6. Connect agents
 
-Register each agent, store its token as `HOA_AGENT_TOKEN` along with `HOA_WORKSHOP_URL=https://agents.<domain>.af`, and send heartbeats. See the [ingest API](../40-reference/agent-ingest-api.md) or the in-app Connect page. Share an agent with your partner from its page. They can watch it; only you can control it.
+Register each agent, store its token as `HOA_AGENT_TOKEN` along with `HOA_WORKSHOP_URL=https://agents.<domain>.af`, and send heartbeats. See the [ingest API](../40-reference/agent-ingest-api.md) or the in-app Connect page. Share an agent with your partner from its page. They can watch it; only you can control it. A teammate connecting their own agents can hand [this metaprompt](../../workshop/teammate-agent-setup-prompt.md) to their Claude agent.
 
 ## Smoke checks after deploy
 
